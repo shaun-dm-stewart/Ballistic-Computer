@@ -51,7 +51,7 @@ void getEnvironment()
 	debug("% RH");
 	debug("\t\tPressure: ");
 	debug(weatherCondition.Barometer);
-	debugln(" inHg");
+	debugln(" in Hg");
 }
 
 void setup() 
