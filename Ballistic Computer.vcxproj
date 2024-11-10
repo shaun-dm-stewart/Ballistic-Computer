@@ -100,6 +100,7 @@
   <ItemGroup>
     <None Include="src\arduino folders read me.txt">
     </None>
+    <None Include="src\rifle.dbb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="VisualMicro" />

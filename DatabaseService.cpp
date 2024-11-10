@@ -22,17 +22,20 @@ DatabaseService::DatabaseService(HardwareSerial* serial)
 	}
 	debugln("initialization done.");
 }
-bool DatabaseService::LoadRifleIndex(IndexItem* rifles[])
+
+int DatabaseService::LoadRifleIndex(IndexItem rifles[])
 {
-	bool result = false;
+	int result = 0;
 	uint32_t indexOffset = 0;
 	uint32_t fileSize = 0;
 	uint16_t recordCount = 0;
 	byte buffer[RIFLERECORDLENGTH];
+	IndexItem rifleIndex[MAXRIFLECOUNT];
 
-	_data = SD.open("rifle.dbb");
+	_data = SD.open(RIFLEFILENAME);
+	recordCount = _data.size() / RIFLERECORDLENGTH;
 	if (_data) {
-		while (indexOffset < fileSize && recordCount < MAXRIFLECOUNT)
+		while (indexOffset < recordCount && recordCount < MAXRIFLECOUNT)
 		{
 			for (int i = 0; i < RIFLERECORDLENGTH; i++)
 			{
@@ -45,21 +48,22 @@ bool DatabaseService::LoadRifleIndex(IndexItem* rifles[])
 				break;
 			}
 			desc = doc["desc"];
-			rifles[indexOffset]->id = doc["id"];
-			strcpy(rifles[indexOffset]->desc, desc);
+			rifles[indexOffset].id = doc["id"];
+			strcpy(rifles[indexOffset].desc, desc);
 			indexOffset++;
-			recordCount++;
 		}
-		result = true;
+		result = indexOffset;
 	}
 	_data.close();
 
 	return result;
 }
+
 bool DatabaseService::LoadCartridgeIndex(IndexItem* cartridges[])
 {
 	return true;
 }
+
 bool DatabaseService::LoadRifleDetail(int index, RifleData* rifleData)
 {
 	uint32_t indexOffset = (index - 1) * RIFLERECORDLENGTH;
@@ -109,45 +113,6 @@ bool DatabaseService::LoadCartridgeDetail(int RifleIndex, int CartridgeIndex, Ca
 {
 	return true;
 }
-
-#ifdef DEBUG
-void DatabaseService::testSD()
-{
-	// open the file. note that only one file can be open at a time,
-	// so you have to close this one before opening another.
-	_data = SD.open("test.txt", FILE_WRITE);
-
-	// if the file opened okay, write to it:
-	if (_data) {
-		debugln("Writing to test.txt...");
-		_data.println("testing 1, 2, 3.");
-		// close the file:
-		_data.close();
-		Serial.println("done.");
-	}
-	else {
-		// if the file didn't open, print an error:
-		Serial.println("error opening test.txt");
-	}
-
-	// re-open the file for reading:
-	_data = SD.open("test.txt");
-	if (_data) {
-		debugln("test.txt:");
-
-		// read from the file until there's nothing else in it:
-		while (_data.available()) {
-			debugWrite(_data.read());
-		}
-		// close the file:
-		_data.close();
-	}
-	else {
-		// if the file didn't open, print an error:
-		debug("error opening test.txt");
-	}
-}
-#endif
 
 
 

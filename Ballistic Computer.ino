@@ -24,6 +24,7 @@ ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
 ShotSolution shotSolution;
 DatabaseService dbService(&Serial);
+IndexItem rifleIndex[MAXRIFLECOUNT];
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -51,10 +52,6 @@ void setup()
 	{
 		delay(1000);
 	}
-
-#ifdef DEBUG
-	dbService.testSD();
-#endif
 }
 
 void loop() {
@@ -104,5 +101,10 @@ void loop() {
 	debug("\t\tPressure: ");
 	debug(weatherCondition.Barometer);
 	debugln(" in Hg");
+	int rifleCnt = dbService.LoadRifleIndex(rifleIndex);
+	for (int i = 0; i < rifleCnt; i++)
+	{
+		debugln(rifleIndex[i].desc);
+	}
 	delay(1000);
 }

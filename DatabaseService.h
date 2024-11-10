@@ -35,11 +35,10 @@ class DatabaseService
 	public:
 		DatabaseService();
 		DatabaseService(HardwareSerial* serial);
-		bool LoadRifleIndex(IndexItem* rifles[]);
+		int LoadRifleIndex(IndexItem rifles[]);
 		bool LoadCartridgeIndex(IndexItem* cartridges[]);
 		bool LoadRifleDetail(int index, RifleData* rifleData);
 		bool LoadCartridgeDetail(int RifleIndex, int CartridgeIndex, CartridgeData* cartridgeData);
-		void testSD();
 	private:
 		JsonDocument doc;
 		ext::File _data;
