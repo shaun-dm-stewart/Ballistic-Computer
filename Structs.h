@@ -15,6 +15,56 @@ enum DragFunction
 	G8
 };
 
+// Somewhere in here we will need to do declination corrections
+enum ComputerState
+{
+	IDLE,
+	RIFLE,
+	CARTRIDGE,
+	RANGE,
+	ENVIRONMENT,	// We might not need this machine state
+	WINDDIRECTION,
+	LOCATION,
+	AZIMUTH,
+	GEOMETRY,
+	SOLUTION,
+	CALIBRATION
+};
+
+// initial load of rifle and cartridge data will be ids and descriptions
+typedef struct
+{
+	int id;
+	char desc[21];
+} IndexItem;
+
+typedef struct
+{
+	int id;
+	char desc[21];
+	double sh;
+	double tr;
+	double zd;
+	double ec;
+	double wc;
+	double al;
+	double ap;
+	double te;
+	double rh;
+} RifleData;
+
+typedef struct
+{
+	int id;
+	int rifleid;
+	char desc[21];
+	double wt;
+	double mv;
+	double bc;
+	double bl;
+	double clbr;
+} CartridgeData;
+
 typedef struct
 {
 	double Altitude;

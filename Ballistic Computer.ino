@@ -5,22 +5,23 @@
 */
 
 #include <Wire.h>
+#include <BME280I2C.h>
+#include <BME280.h>
+#include "Constants.h"
 #include "Structs.h"
 #include "Rifle.h"
-#include <BME280I2C.h>
+#include "DatabaseService.h"
+#include "Climate.h"
+
+
+#define DEBUG
 
 RifleInfo rifleInfo;
 Cartridge cartridge;
 ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
 ShotSolution shotSolution;
-BME280I2C bme;
-
-#define I2C_SDA 21
-#define I2C_SCL 22 
-#define SERIAL_BAUD 9600
-
-#define DEBUG
+DatabaseService dbService(&Serial);
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -32,31 +33,30 @@ BME280I2C bme;
 #define debugSerial(x)
 #endif
 
-void getEnvironment()
-{
-	float temp(NAN), hum(NAN), pres(NAN);
-
-	BME280::TempUnit tempUnit(BME280::TempUnit_Fahrenheit);
-	BME280::PresUnit presUnit(BME280::PresUnit_inHg);
-
-	bme.read(pres, temp, hum, tempUnit, presUnit);
-	weatherCondition.Barometer = pres;
-	weatherCondition.Temperature = temp;
-	weatherCondition.RelativeHumidity = (hum / 100.0);
-	debug("Temp: ");
-	debug(weatherCondition.Temperature);
-	debug("°" + String(tempUnit == BME280::TempUnit_Celsius ? 'C' : 'F'));
-	debug("\t\tHumidity: ");
-	debug(weatherCondition.RelativeHumidity);
-	debug("% RH");
-	debug("\t\tPressure: ");
-	debug(weatherCondition.Barometer);
-	debugln(" in Hg");
-}
-
 void setup() 
 {
-	// Remove for live
+
+#ifdef DEBUG
+	Serial.begin(SERIAL_BAUD);
+	while (!Serial) {} // Wait
+#endif
+	Serial1.begin(9600, SERIAL_8N1, RXD1, TXD1);
+	while (!Serial1) {} // Wait
+
+	Wire.begin(SDAPIN, SCLPIN);
+
+	while (!bme.begin())
+	{
+		delay(1000);
+	}
+
+#ifdef DEBUG
+	dbService.testSD();
+#endif
+}
+
+void loop() {
+#ifdef DEBUG
 	rifleInfo.TwistRate = 11.25;
 	rifleInfo.ZeroingConditions.Altitude = 0;
 	rifleInfo.ZeroingConditions.Barometer = 29.929494;
@@ -91,20 +91,16 @@ void setup()
 		&weatherCondition,
 		&shotLocationInfo);
 	Serial.printf("Vertical MOA correction %f\n", shotSolution.VerticalMOA);
-	// End of remove for live
-
-#ifdef DEBUG
-	Serial.begin(SERIAL_BAUD);
-	while (!Serial) {} // Wait
 #endif
-	Wire.begin(I2C_SDA, I2C_SCL);
-	while (!bme.begin())
-	{
-		delay(1000);
-	}
-}
-
-void loop() {
-	getEnvironment();
+	getConditions(&weatherCondition);
+	debug("Temp: ");
+	debug(weatherCondition.Temperature);
+	debug("°F");
+	debug("\t\tHumidity: ");
+	debug(weatherCondition.RelativeHumidity);
+	debug("% RH");
+	debug("\t\tPressure: ");
+	debug(weatherCondition.Barometer);
+	debugln(" in Hg");
 	delay(1000);
 }
