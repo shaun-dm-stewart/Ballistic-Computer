@@ -6,6 +6,8 @@
 #include <SPI.h>
 #include <mySD.h>
 #include <HardwareSerial.h>
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
 
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "arduino.h"
@@ -22,18 +24,24 @@
 #else
 #define debugln(x)
 #define debug(x)
-#define debugSerial(x)
+#define debugWrite(x)
 #endif
 
+#include"Structs.h"
 #include "Constants.h"
-#include "Structs.h"
+
 class DatabaseService
 {
 	public:
 		DatabaseService();
 		DatabaseService(HardwareSerial* serial);
+		bool LoadRifleIndex(IndexItem* rifles[]);
+		bool LoadCartridgeIndex(IndexItem* cartridges[]);
+		bool LoadRifleDetail(int index, RifleData* rifleData);
+		bool LoadCartridgeDetail(int RifleIndex, int CartridgeIndex, CartridgeData* cartridgeData);
 		void testSD();
 	private:
+		JsonDocument doc;
 		ext::File _data;
 		HardwareSerial* _serial;
 };

@@ -4,6 +4,8 @@
  Author:	Shaun Stewart
 */
 
+#include <ArduinoJson.h>
+#include <ArduinoJson.hpp>
 #include <Wire.h>
 #include <BME280I2C.h>
 #include <BME280.h>
