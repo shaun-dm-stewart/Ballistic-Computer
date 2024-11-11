@@ -3,7 +3,7 @@
 // 
 
 #include "Rifle.h"
-Rifle::Rifle(RifleInfo* rifleInfo, Cartridge* ammoInfo, ShotSolution* sln)
+Rifle::Rifle(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln)
 {
 	Initialize(rifleInfo, ammoInfo, sln);
 }
@@ -13,7 +13,7 @@ Rifle::Rifle()
 
 }
 
-void Rifle::Initialize(RifleInfo* rifleInfo, Cartridge* ammoInfo, ShotSolution* sln)
+void Rifle::Initialize(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln)
 {
 	_rifleInfo = rifleInfo;
 	_ammoInfo = ammoInfo;

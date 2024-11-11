@@ -93,7 +93,7 @@ typedef struct
 	double Caliber;
 	double BulletLength;
 	double WeightGrains;
-}Cartridge;
+}CartridgeInfo;
 
 typedef struct
 {

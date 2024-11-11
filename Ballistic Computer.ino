@@ -18,13 +18,17 @@
 
 #define DEBUG
 
+RifleData rifleData;
+CartridgeData cartridgeData;
+IndexItem rifleIndex[MAXRIFLECOUNT];
+IndexItem cartIndex[MAXCARTRIDGECOUNT];
 RifleInfo rifleInfo;
-Cartridge cartridge;
+CartridgeInfo cartridge;
 ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
 ShotSolution shotSolution;
-DatabaseService dbService(&Serial);
-IndexItem rifleIndex[MAXRIFLECOUNT];
+DatabaseService dbService;
+
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -38,28 +42,6 @@ IndexItem rifleIndex[MAXRIFLECOUNT];
 
 void setup() 
 {
-
-#ifdef DEBUG
-	Serial.begin(SERIAL_BAUD);
-	while (!Serial) {} // Wait
-#endif
-	//  Nextion connection
-	Serial1.begin(9600, SERIAL_8N1, RXD1, TXD1);
-	while (!Serial1) {} // Wait
-
-	// GPS connection
-	Serial2.begin(9600);
-	while (!Serial2) {} // Wait
-
-	Wire.begin(SDAPIN, SCLPIN);
-
-	while (!bme.begin())
-	{
-		delay(1000);
-	}
-}
-
-void loop() {
 #ifdef DEBUG
 	rifleInfo.TwistRate = 11.25;
 	rifleInfo.ZeroingConditions.Altitude = 0;
@@ -85,7 +67,31 @@ void loop() {
 	weatherCondition.Barometer = 29.929494;
 	weatherCondition.RelativeHumidity = 0.5;
 	weatherCondition.Temperature = 85.999999999999;
+#endif
 
+#ifdef DEBUG
+	Serial.begin(SERIAL_BAUD);
+	while (!Serial) {} // Wait
+#endif
+	//  Nextion connection
+	Serial1.begin(9600, SERIAL_8N1, RXD1, TXD1);
+	while (!Serial1) {} // Wait
+
+	// GPS connection
+	Serial2.begin(9600);
+	while (!Serial2) {} // Wait
+
+	Wire.begin(SDAPIN, SCLPIN);
+
+	dbService.begin();
+
+	while (!bme.begin())
+	{
+		delay(1000);
+	}
+}
+
+void loop() {
 	Rifle rifle(&rifleInfo, &cartridge, &shotSolution);
 	rifle.Solve(
 		0.0, //shooting angle
@@ -94,8 +100,8 @@ void loop() {
 		546.807,
 		&weatherCondition,
 		&shotLocationInfo);
-	Serial.printf("Vertical MOA correction %f\n", shotSolution.VerticalMOA);
-#endif
+	debug("Vertical MOA correction: ");
+	debugln(shotSolution.VerticalMOA);
 	getConditions(&weatherCondition);
 	debug("Temp: ");
 	debug(weatherCondition.Temperature);
@@ -106,10 +112,26 @@ void loop() {
 	debug("\t\tPressure: ");
 	debug(weatherCondition.Barometer);
 	debugln(" in Hg");
-	int rifleCnt = dbService.LoadRifleIndex(rifleIndex);
-	for (int i = 0; i < rifleCnt; i++)
+
+	int count = dbService.loadRifleIndex(rifleIndex);
+	for (int i = 0; i < count; i++)
 	{
-		debugln(rifleIndex[i].desc);
+		Serial.println(rifleIndex[i].desc);
 	}
-	delay(1000);
+
+	count = dbService.loadCartridgeIndex(rifleIndex[0].id, cartIndex);
+	for (int i = 0; i < count; i++)
+	{
+		Serial.println(cartIndex[i].desc);
+	}
+
+	dbService.loadRifleDetail(2, &rifleData);
+
+	Serial.println(rifleData.desc);
+
+	dbService.loadCartridgeDetail(1, 3, &cartridgeData);
+
+	Serial.println(cartridgeData.desc);
+
+	delay(2000);
 }

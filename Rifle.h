@@ -14,20 +14,20 @@
 class Rifle
 {
 public:
-	Cartridge Ammo;
+	CartridgeInfo Ammo;
 	WeatherCondition ZeroingConditions;
 	double BarrelTwist;
 	char Name[20];
-	Rifle(RifleInfo* rifleInfo, Cartridge* ammoInfo, ShotSolution* sln);
+	Rifle(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln);
 	Rifle();
-	void Initialize(RifleInfo* rifleInfo, Cartridge* ammoInfo, ShotSolution* sln);
+	void Initialize(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln);
 	int Solve(double shootingAngle, double windSpeed, double windAngle, double range, WeatherCondition* atmInfo, ShotLocationInfo* shotLocationInfo);
 private:
 	Ballistics _ballistics;
 	ShotSolution* _shotSln;
 	BallisticSolution _sln;
 	RifleInfo* _rifleInfo;
-	Cartridge* _ammoInfo;
+	CartridgeInfo* _ammoInfo;
 	double _zeroAngle;
 };
 #endif

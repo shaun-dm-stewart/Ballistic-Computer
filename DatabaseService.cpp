@@ -9,23 +9,19 @@ DatabaseService::DatabaseService()
 
 }
 
-DatabaseService::DatabaseService(HardwareSerial* serial)
+bool DatabaseService::begin()
 {
-	_serial = serial;
-
-	pinMode(CHIPSELECTPIN, OUTPUT);
-
-	// Change these values in the constants file
-	if (!SD.begin(CHIPSELECTPIN, MOSIPIN, MISOPIN, SCKPIN)) {
-		debugln("initialization failed!");
-		return;
+	pinMode(SD_CHIPSELECTPIN, OUTPUT);
+	if (!SD.begin(SD_CHIPSELECTPIN, MOSIPIN, MISOPIN, SCKPIN))
+	{
+		return false;
 	}
-	debugln("initialization done.");
+	return true;
 }
 
-int DatabaseService::LoadRifleIndex(IndexItem rifles[])
+int16_t DatabaseService::loadRifleIndex(IndexItem rifles[])
 {
-	int result = 0;
+	int16_t result = 0;
 	uint32_t indexOffset = 0;
 	uint32_t fileSize = 0;
 	uint16_t recordCount = 0;
@@ -59,9 +55,9 @@ int DatabaseService::LoadRifleIndex(IndexItem rifles[])
 	return result;
 }
 
-int DatabaseService::LoadCartridgeIndex(int rifleId, IndexItem cartridges[])
+int16_t DatabaseService::loadCartridgeIndex(int rifleId, IndexItem cartridges[])
 {
-	int result = 0;
+	int16_t result = 0;
 	uint32_t indexOffset = 0;
 	uint32_t fileSize = 0;
 	uint16_t recordCount = 0;
@@ -96,7 +92,7 @@ int DatabaseService::LoadCartridgeIndex(int rifleId, IndexItem cartridges[])
 	return result;
 }
 
-bool DatabaseService::LoadRifleDetail(int rifleId, RifleData* rifleData)
+bool DatabaseService::loadRifleDetail(int rifleId, RifleData* rifleData)
 {
 	uint32_t indexOffset = (rifleId - 1) * RIFLERECORDLENGTH;
 	uint32_t fileSize = 0;
@@ -142,7 +138,7 @@ bool DatabaseService::LoadRifleDetail(int rifleId, RifleData* rifleData)
 	return result;
 }
 
-bool DatabaseService::LoadCartridgeDetail(int rifleId, int cartridgeId, CartridgeData* cartridgeData)
+bool DatabaseService::loadCartridgeDetail(int rifleId, int cartridgeId, CartridgeData* cartridgeData)
 {
 	bool result = false;
 	uint32_t indexOffset = (cartridgeId - 1) * CARTRECORDLENGTH;
@@ -187,6 +183,3 @@ bool DatabaseService::LoadCartridgeDetail(int rifleId, int cartridgeId, Cartridg
 
 	return result;
 }
-
-
-

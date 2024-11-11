@@ -21,7 +21,7 @@ const int16_t SCLPIN = 22;
 const int16_t SERIAL_BAUD = 9600;
 
 // SPI pins
-const uint8_t CHIPSELECTPIN = 5;
+const uint8_t SD_CHIPSELECTPIN = 5;
 const uint8_t MOSIPIN = 23;
 const uint8_t MISOPIN = 19;
 const uint8_t SCKPIN = 18;
