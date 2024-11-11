@@ -36,9 +36,9 @@ class DatabaseService
 		DatabaseService();
 		DatabaseService(HardwareSerial* serial);
 		int LoadRifleIndex(IndexItem rifles[]);
-		bool LoadCartridgeIndex(IndexItem* cartridges[]);
-		bool LoadRifleDetail(int index, RifleData* rifleData);
-		bool LoadCartridgeDetail(int RifleIndex, int CartridgeIndex, CartridgeData* cartridgeData);
+		int LoadCartridgeIndex(int rifleId, IndexItem cartridges[]);
+		bool LoadRifleDetail(int rifleId, RifleData* rifleData);
+		bool LoadCartridgeDetail(int rifleId, int cartridgeId, CartridgeData* cartridgeData);
 	private:
 		JsonDocument doc;
 		ext::File _data;

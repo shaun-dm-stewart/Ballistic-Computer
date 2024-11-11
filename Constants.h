@@ -7,8 +7,9 @@
 const int16_t RIFLERECORDLENGTH = 151;
 const int16_t CARTRECORDLENGTH = 101;
 const uint16_t MAXRIFLECOUNT = 10;
-const uint16_t MACCARTRIDGECOUNT = 20;
+const uint16_t MAXCARTRIDGECOUNT = 20;
 const char RIFLEFILENAME[] = "rifle.dbb";
+const char CARTRIDGEFILEFORMAT[] = "rifle%d.dbb";
 
 // Alternative pins for Serial1
 const int8_t RXD1 = 32;

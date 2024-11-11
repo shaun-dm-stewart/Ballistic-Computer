@@ -43,8 +43,13 @@ void setup()
 	Serial.begin(SERIAL_BAUD);
 	while (!Serial) {} // Wait
 #endif
+	//  Nextion connection
 	Serial1.begin(9600, SERIAL_8N1, RXD1, TXD1);
 	while (!Serial1) {} // Wait
+
+	// GPS connection
+	Serial2.begin(9600);
+	while (!Serial2) {} // Wait
 
 	Wire.begin(SDAPIN, SCLPIN);
 
