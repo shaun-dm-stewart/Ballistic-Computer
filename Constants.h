@@ -12,8 +12,12 @@ const char RIFLEFILENAME[] = "rifle.dbb";
 const char CARTRIDGEFILEFORMAT[] = "rifle%d.dbb";
 
 // Alternative pins for Serial1
-const int8_t RXD1 = 32;
-const int8_t TXD1 = 33;
+const int8_t GPS_RXD1 = 32;
+const int8_t GPS_TXD1 = 33;
+
+// Alternative pins for Serial2
+const int8_t NEX_RXD1 = 16;
+const int8_t NEX_TXD1 = 17;
 
 // I2C pins
 const int16_t SDAPIN = 21;

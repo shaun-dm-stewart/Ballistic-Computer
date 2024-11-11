@@ -4,6 +4,8 @@
  Author:	Shaun Stewart
 */
 
+#include <TinyGPS++.h>
+#include <TinyGPSPlus.h>
 #include <ArduinoJson.h>
 #include <ArduinoJson.hpp>
 #include <Wire.h>
@@ -14,6 +16,7 @@
 #include "Rifle.h"
 #include "DatabaseService.h"
 #include "Climate.h"
+#include "GPS.h"
 
 
 #define DEBUG
@@ -28,6 +31,8 @@ ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
 ShotSolution shotSolution;
 DatabaseService dbService;
+GPS gps;
+DateAndTime dateAndTime;
 
 
 #ifdef DEBUG 
@@ -73,12 +78,12 @@ void setup()
 	Serial.begin(SERIAL_BAUD);
 	while (!Serial) {} // Wait
 #endif
-	//  Nextion connection
-	Serial1.begin(9600, SERIAL_8N1, RXD1, TXD1);
+	// GPS connection
+	Serial1.begin(SERIAL_BAUD, SERIAL_8N1, GPS_RXD1, GPS_TXD1);
 	while (!Serial1) {} // Wait
 
-	// GPS connection
-	Serial2.begin(9600);
+	// Nextion connection
+	Serial2.begin(SERIAL_BAUD, SERIAL_8N1, NEX_RXD1, NEX_TXD1);
 	while (!Serial2) {} // Wait
 
 	Wire.begin(SDAPIN, SCLPIN);
@@ -89,9 +94,12 @@ void setup()
 	{
 		delay(1000);
 	}
+
+	gps.begin(&Serial1);
 }
 
-void loop() {
+void getFiringSolution()
+{
 	Rifle rifle(&rifleInfo, &cartridge, &shotSolution);
 	rifle.Solve(
 		0.0, //shooting angle
@@ -112,7 +120,11 @@ void loop() {
 	debug("\t\tPressure: ");
 	debug(weatherCondition.Barometer);
 	debugln(" in Hg");
+}
 
+void loop() 
+{
+	getFiringSolution();
 	int count = dbService.loadRifleIndex(rifleIndex);
 	for (int i = 0; i < count; i++)
 	{
@@ -132,6 +144,19 @@ void loop() {
 	dbService.loadCartridgeDetail(1, 3, &cartridgeData);
 
 	Serial.println(cartridgeData.desc);
+
+	if (gps.getFix())
+	{
+		debug("Latitude: ");
+		debug(gps.getLatitude());
+		debug("\t");
+		debug("Altitude: ");
+		debug(gps.getAltitude());
+		debug("\t");
+		debug("year: ");
+		debug(gps.getDateTime().year);
+		debug("\n");
+	}
 
 	delay(2000);
 }
