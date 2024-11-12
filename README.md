@@ -20,4 +20,4 @@ My current thoughts on a bill of materials are:<br>
 1 x Buck converter        - To generate 5V for the Nextion<br>
 1 x SD card module        - To store the necessary data
 
-The external ballistics calculations are derived from the Gnu External Ballistics library.  This version has been modified to remove the need for dynamic memory allocation.  This is necessary because of the limited memory of the ESP32.
+The exterior ballistics calculations were influenced by the Gnu Exterior Ballistics library.  This version has been modified to avoid the need for dynamic memory allocation and returns return a firing solution for a specified range.  The solution is calculated based upon the range and the measured environmental conditions and geolocation information.
