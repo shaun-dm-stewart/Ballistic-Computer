@@ -4,6 +4,7 @@
  Author:	Shaun Stewart
 */
 
+#include <HardwareSerial.h>
 #include <TinyGPS++.h>
 #include <TinyGPSPlus.h>
 #include <ArduinoJson.h>
@@ -17,15 +18,19 @@
 #include "DatabaseService.h"
 #include "Climate.h"
 #include "GPS.h"
-
+#include "NextionComms.h"
 
 #define DEBUG
 
 RifleData rifleData;
-CartridgeData cartridgeData;
 IndexItem rifleIndex[MAXRIFLECOUNT];
 IndexItem cartIndex[MAXCARTRIDGECOUNT];
 RifleInfo rifleInfo;
+int rifleCount = 0;
+int rifleSelected = 0;
+CartridgeData cartridgeData;
+int cartridgeCount = 0;
+int cartridgeSelected = 0;
 CartridgeInfo cartridge;
 ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
@@ -33,7 +38,8 @@ ShotSolution shotSolution;
 DatabaseService dbService;
 GPS gps;
 DateAndTime dateAndTime;
-
+ComputerState computerState = IDLE;
+NextionComms nextionComms;
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -45,7 +51,7 @@ DateAndTime dateAndTime;
 #define debugSerial(x)
 #endif
 
-void setup() 
+void setup()
 {
 #ifdef DEBUG
 	rifleInfo.TwistRate = 11.25;
@@ -96,6 +102,7 @@ void setup()
 	}
 
 	gps.begin(&Serial1);
+	nextionComms.begin(&Serial2);
 }
 
 void getFiringSolution()
@@ -122,7 +129,7 @@ void getFiringSolution()
 	debugln(" in Hg");
 }
 
-void loop() 
+void demoTheRest()
 {
 	getFiringSolution();
 	int count = dbService.loadRifleIndex(rifleIndex);
@@ -159,4 +166,208 @@ void loop()
 	}
 
 	delay(2000);
+}
+
+void loop()
+{
+	static bool idleFirstRun = true;
+	static bool rifleFirstRun = true;
+	static bool cartridgeFirstRun = true;
+	static bool rangeFirstRun = true;
+	static UIData uiData;
+
+	// Let's get the finite state machine going
+	switch (computerState)
+	{
+		case IDLE:
+			if (idleFirstRun)
+			{
+				idleFirstRun = false;
+			}
+			
+			if (nextionComms.isMessageInBuffer())
+			{
+				// Run this until the state changes
+				nextionComms.getData(&uiData);
+				if (uiData.page == 0)
+				{
+					if (uiData.value == 1)
+					{
+						computerState = RIFLE;
+						idleFirstRun = true;
+					}
+				}
+			}
+
+			break;
+		case RIFLE:
+			if (rifleFirstRun)
+			{
+				// One shots in here on entry to this state
+				if (rifleCount == 0)
+				{
+					rifleCount = dbService.loadRifleIndex(rifleIndex);
+					rifleSelected = 0;
+				}
+				if (rifleCount > 0)
+				{
+					rifleData.id = rifleIndex[rifleSelected].id;
+					strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+					nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
+					nextionComms.sendPageToNextion(uiData.value);
+					rifleFirstRun = false;
+				}
+			}
+
+			if (nextionComms.isMessageInBuffer())
+			{
+				nextionComms.getData(&uiData);
+				if (uiData.page == 1)
+				{
+					switch (uiData.value)
+					{
+					case 1:
+						//Scroll left
+						if (rifleSelected > 0)
+						{
+							rifleSelected--;
+						}
+						else
+						{
+							rifleSelected = rifleCount - 1;
+						}
+						nextionComms.sendStringToNextion("rifle.t2.txt", rifleIndex[rifleSelected].desc);
+						rifleData.id = rifleIndex[rifleSelected].id;
+						strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+						break;
+					case 2:
+						// scroll right
+						if (rifleSelected < (rifleCount - 2) )
+						{
+							rifleSelected++;
+						}
+						else
+						{
+							rifleSelected = 0;
+						}
+						nextionComms.sendStringToNextion("rifle.t2.txt", rifleIndex[rifleSelected].desc);
+						rifleData.id = rifleIndex[rifleSelected].id;
+						strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+						break;
+					case 3:
+							// navigate to cartridge page
+							computerState = CARTRIDGE;
+							idleFirstRun = true;
+						break;
+					}
+				}
+			}
+
+			break;
+		case CARTRIDGE:
+			if (cartridgeFirstRun = true)
+			{
+				// navigate to cartridge page
+				if (cartridgeCount == 0)
+				{
+					cartridgeCount = dbService.loadCartridgeIndex(rifleData.id, cartIndex);
+					cartridgeSelected = 0;
+				}
+				if (cartridgeCount > 0)
+				{
+					cartridgeData.id = cartIndex[cartridgeSelected].id;
+					strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+					nextionComms.sendStringToNextion("globals.cartname.val", cartridgeData.desc);
+					nextionComms.sendPageToNextion(uiData.value);
+					cartridgeFirstRun = false;
+				}
+			}
+
+			if (nextionComms.isMessageInBuffer())
+			{
+				nextionComms.getData(&uiData);
+				if (uiData.page == 2)
+				{
+					switch (uiData.value)
+					{
+					case 1:
+						//Scroll left
+						if (cartridgeSelected > 0)
+						{
+							cartridgeSelected--;
+						}
+						else
+						{
+							cartridgeSelected = cartridgeCount - 1;
+						}
+						nextionComms.sendStringToNextion("cartridge.t2.txt", cartIndex[cartridgeSelected].desc);
+						cartridgeData.id = cartIndex[cartridgeSelected].id;
+						strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+						break;
+					case 2:
+						// scroll right
+						if (cartridgeSelected < (rifleCount - 2))
+						{
+							cartridgeSelected++;
+						}
+						else
+						{
+							cartridgeSelected = 0;
+						}
+						nextionComms.sendStringToNextion("cartridge.t2.txt", cartIndex[cartridgeSelected].desc);
+						cartridgeData.id = cartIndex[cartridgeSelected].id;
+						strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+						break;
+					case 3:
+						// Back to previous page
+						computerState = RIFLE;
+						break;
+					case 4:
+						// navigate to range page
+						computerState = CARTRIDGE;
+						cartridgeFirstRun = true;
+						break;
+					}
+				}
+			}
+			break;
+		case RANGE:
+			if (rangeFirstRun)
+			{
+				nextionComms.sendPageToNextion(uiData.value);
+				rangeFirstRun = false;
+			}
+
+			if (nextionComms.isMessageInBuffer())
+			{
+				nextionComms.getData(&uiData);
+				if (uiData.page == 3)
+				{
+					switch(uiData.value)
+					{
+						case 1:
+							computerState = RIFLE;
+							break;
+						case 2:
+							// Do something cool with the range
+							break;
+					}
+				}
+			}
+
+			break;
+		case ENVIRONMENT:	// We might not need this machine state
+			break;
+		case WINDDIRECTION:
+		case LOCATION:
+			break;
+		case AZIMUTH:
+			break;
+		case GEOMETRY:
+			break;
+		case SOLUTION:
+			break;
+		case CALIBRATION:
+			break;
+	}
 }

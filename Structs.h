@@ -132,4 +132,10 @@ typedef struct
 	double ShotAzimuth;
 } ShotLocationInfo;
 
+typedef struct UIData
+{
+	int page = 0;
+	int value = 0;
+	int range = 0;
+};
 #endif

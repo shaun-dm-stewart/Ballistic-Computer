@@ -18,7 +18,13 @@
     <None Include="src\arduino folders read me.txt">
       <Filter>Misc Files</Filter>
     </None>
-    <None Include="src\rifle.dbb">
+    <None Include="Ballistic Computer.HMI">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="rifle.dbb">
+      <Filter>Misc Files</Filter>
+    </None>
+    <None Include="rifle1.dbb">
       <Filter>Misc Files</Filter>
     </None>
   </ItemGroup>
@@ -34,6 +40,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GPS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NextionComms.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -60,6 +69,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NextionComms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

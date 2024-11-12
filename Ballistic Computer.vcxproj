@@ -96,15 +96,21 @@
       <SubType>
       </SubType>
     </ClCompile>
+    <ClCompile Include="NextionComms.cpp">
+      <SubType>
+      </SubType>
+    </ClCompile>
     <ClCompile Include="Rifle.cpp">
       <SubType>
       </SubType>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Ballistic Computer.HMI" />
+    <None Include="rifle.dbb" />
+    <None Include="rifle1.dbb" />
     <None Include="src\arduino folders read me.txt">
     </None>
-    <None Include="src\rifle.dbb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectCapability Include="VisualMicro" />
@@ -124,6 +130,10 @@
       </SubType>
     </ClInclude>
     <ClInclude Include="GPS.h">
+      <SubType>
+      </SubType>
+    </ClInclude>
+    <ClInclude Include="NextionComms.h">
       <SubType>
       </SubType>
     </ClInclude>
