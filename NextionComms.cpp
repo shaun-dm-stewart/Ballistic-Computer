@@ -5,12 +5,13 @@
 #include "NextionComms.h"
 NextionComms::NextionComms()
 {
-	
+
 }
 
 bool NextionComms::begin(HardwareSerial* serial)
 {
-	return true;
+    _serial = serial;
+    return true;
 }
 
 bool NextionComms::sendStringToNextion(char variable[], char value[])
@@ -82,7 +83,7 @@ bool NextionComms::isMessageInBuffer()
             break;
         }
     }
-	return msgInBuffer;
+    return msgInBuffer;
 }
 
 bool NextionComms::getData(UIData* data)
@@ -91,8 +92,6 @@ bool NextionComms::getData(UIData* data)
     DeserializationError error = deserializeJson(_doc, _msgBuffer);
     // Test if parsing succeeds.
     if (error) {
-        //Serial.print(F("deserializeJson() failed: "));
-        //Serial.println(error.f_str());
         return result;
     }
 
@@ -102,19 +101,18 @@ bool NextionComms::getData(UIData* data)
 
     switch (data->page)
     {
-        case 0:     // We have the data we need so there is nothing to do
-        case 1:
-        case 2:
-            break;
-        case 3:
-            data->range = _doc["range"];
-            break;
-        default:
-            break;
+    case 0:     // We have the data we need so there is nothing to do
+    case 1:
+    case 2:
+        break;
+    case 3:
+        data->range = _doc["range"];
+        break;
+    default:
+        break;
     }
 
     result = true;
 
     return result;
 }
-

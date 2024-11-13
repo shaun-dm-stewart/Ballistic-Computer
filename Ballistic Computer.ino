@@ -102,7 +102,10 @@ void setup()
 	}
 
 	gps.begin(&Serial1);
+	
 	nextionComms.begin(&Serial2);
+
+    debugln("");
 }
 
 void getFiringSolution()
@@ -170,204 +173,185 @@ void demoTheRest()
 
 void loop()
 {
-	static bool idleFirstRun = true;
-	static bool rifleFirstRun = true;
-	static bool cartridgeFirstRun = true;
-	static bool rangeFirstRun = true;
-	static UIData uiData;
+    static bool idleFirstRun = true;
+    static bool rifleFirstRun = true;
+    static bool cartridgeFirstRun = true;
+    static bool rangeFirstRun = true;
+    static UIData uiData;
 
-	// Let's get the finite state machine going
-	switch (computerState)
-	{
-		case IDLE:
-			if (idleFirstRun)
-			{
-				idleFirstRun = false;
-			}
-			
-			if (nextionComms.isMessageInBuffer())
-			{
-				// Run this until the state changes
-				nextionComms.getData(&uiData);
-				if (uiData.page == 0)
-				{
-					if (uiData.value == 1)
-					{
-						computerState = RIFLE;
-						idleFirstRun = true;
-					}
-				}
-			}
+    // Let's get the finite state machine going
 
-			break;
-		case RIFLE:
-			if (rifleFirstRun)
-			{
-				// One shots in here on entry to this state
-				if (rifleCount == 0)
-				{
-					rifleCount = dbService.loadRifleIndex(rifleIndex);
-					rifleSelected = 0;
-				}
-				if (rifleCount > 0)
-				{
-					rifleData.id = rifleIndex[rifleSelected].id;
-					strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-					nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
-					nextionComms.sendPageToNextion(uiData.value);
-					rifleFirstRun = false;
-				}
-			}
+    switch (computerState) {
+    case IDLE:
+        if (idleFirstRun) {
+            debugln("Idle");
+            idleFirstRun = false;
+        }
 
-			if (nextionComms.isMessageInBuffer())
-			{
-				nextionComms.getData(&uiData);
-				if (uiData.page == 1)
-				{
-					switch (uiData.value)
-					{
-					case 1:
-						//Scroll left
-						if (rifleSelected > 0)
-						{
-							rifleSelected--;
-						}
-						else
-						{
-							rifleSelected = rifleCount - 1;
-						}
-						nextionComms.sendStringToNextion("rifle.t2.txt", rifleIndex[rifleSelected].desc);
-						rifleData.id = rifleIndex[rifleSelected].id;
-						strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-						break;
-					case 2:
-						// scroll right
-						if (rifleSelected < (rifleCount - 2) )
-						{
-							rifleSelected++;
-						}
-						else
-						{
-							rifleSelected = 0;
-						}
-						nextionComms.sendStringToNextion("rifle.t2.txt", rifleIndex[rifleSelected].desc);
-						rifleData.id = rifleIndex[rifleSelected].id;
-						strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-						break;
-					case 3:
-							// navigate to cartridge page
-							computerState = CARTRIDGE;
-							idleFirstRun = true;
-						break;
-					}
-				}
-			}
+        if (nextionComms.isMessageInBuffer()) {
+            // Run this until the state changes
+            nextionComms.getData(&uiData);
+            if (uiData.page == 0) {
+                if (uiData.value == 1) {
+                    computerState = RIFLE;
+                    idleFirstRun = true;
+                }
+            }
+        }
 
-			break;
-		case CARTRIDGE:
-			if (cartridgeFirstRun = true)
-			{
-				// navigate to cartridge page
-				if (cartridgeCount == 0)
-				{
-					cartridgeCount = dbService.loadCartridgeIndex(rifleData.id, cartIndex);
-					cartridgeSelected = 0;
-				}
-				if (cartridgeCount > 0)
-				{
-					cartridgeData.id = cartIndex[cartridgeSelected].id;
-					strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-					nextionComms.sendStringToNextion("globals.cartname.val", cartridgeData.desc);
-					nextionComms.sendPageToNextion(uiData.value);
-					cartridgeFirstRun = false;
-				}
-			}
+        break;
+    case RIFLE:
+        if (rifleFirstRun) {
+            // One shots in here on entry to this state
+            if (rifleCount == 0) {
+                debugln("Rifle");
+                rifleCount = dbService.loadRifleIndex(rifleIndex);
+                rifleSelected = 0;
+                debugln(rifleCount);
+            }
+            if (rifleCount > 0) {
+                rifleData.id = rifleIndex[rifleSelected].id;
+                strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
+                nextionComms.sendPageToNextion(1);
+                rifleFirstRun = false;
+            }
+        }
 
-			if (nextionComms.isMessageInBuffer())
-			{
-				nextionComms.getData(&uiData);
-				if (uiData.page == 2)
-				{
-					switch (uiData.value)
-					{
-					case 1:
-						//Scroll left
-						if (cartridgeSelected > 0)
-						{
-							cartridgeSelected--;
-						}
-						else
-						{
-							cartridgeSelected = cartridgeCount - 1;
-						}
-						nextionComms.sendStringToNextion("cartridge.t2.txt", cartIndex[cartridgeSelected].desc);
-						cartridgeData.id = cartIndex[cartridgeSelected].id;
-						strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-						break;
-					case 2:
-						// scroll right
-						if (cartridgeSelected < (rifleCount - 2))
-						{
-							cartridgeSelected++;
-						}
-						else
-						{
-							cartridgeSelected = 0;
-						}
-						nextionComms.sendStringToNextion("cartridge.t2.txt", cartIndex[cartridgeSelected].desc);
-						cartridgeData.id = cartIndex[cartridgeSelected].id;
-						strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-						break;
-					case 3:
-						// Back to previous page
-						computerState = RIFLE;
-						break;
-					case 4:
-						// navigate to range page
-						computerState = CARTRIDGE;
-						cartridgeFirstRun = true;
-						break;
-					}
-				}
-			}
-			break;
-		case RANGE:
-			if (rangeFirstRun)
-			{
-				nextionComms.sendPageToNextion(uiData.value);
-				rangeFirstRun = false;
-			}
+        if (nextionComms.isMessageInBuffer()) {
+            nextionComms.getData(&uiData);
+            if (uiData.page == 1) {
+                switch (uiData.value) {
+                case 1:
+                    //Scroll left
+                    if (rifleSelected > 0) {
+                        rifleSelected--;
+                    }
+                    else {
+                        rifleSelected = rifleCount - 1;
+                    }
+                    rifleData.id = rifleIndex[rifleSelected].id;
+                    strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                    nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
+                    break;
+                case 2:
+                    // scroll right
+                    if (rifleSelected < (rifleCount - 1)) {
+                        rifleSelected++;
+                    }
+                    else {
+                        rifleSelected = 0;
+                    }
+                    rifleData.id = rifleIndex[rifleSelected].id;
+                    strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                    nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
+                    break;
+                case 3:
+                    // navigate to cartridge page
+                    nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
+                    computerState = CARTRIDGE;
+                    rifleFirstRun = true;
+                    break;
+                }
+            }
+        }
 
-			if (nextionComms.isMessageInBuffer())
-			{
-				nextionComms.getData(&uiData);
-				if (uiData.page == 3)
-				{
-					switch(uiData.value)
-					{
-						case 1:
-							computerState = RIFLE;
-							break;
-						case 2:
-							// Do something cool with the range
-							break;
-					}
-				}
-			}
+        break;
+    case CARTRIDGE:
+        if (cartridgeFirstRun == true) {
+            debugln("Cartridge");
+            if (cartridgeCount == 0) {
+                cartridgeCount = dbService.loadCartridgeIndex(rifleData.id, cartIndex);
+                cartridgeSelected = 0;
+                debugln(cartridgeCount);
+            }
+            if (cartridgeCount > 0) {
+                cartridgeData.id = cartIndex[cartridgeSelected].id;
+                strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                nextionComms.sendStringToNextion("globals.cartname.txt", cartridgeData.desc);
+                nextionComms.sendPageToNextion(2);
+                cartridgeFirstRun = false;
+            }
+        }
 
-			break;
-		case ENVIRONMENT:	// We might not need this machine state
-			break;
-		case WINDDIRECTION:
-		case LOCATION:
-			break;
-		case AZIMUTH:
-			break;
-		case GEOMETRY:
-			break;
-		case SOLUTION:
-			break;
-		case CALIBRATION:
-			break;
-	}
+        if (nextionComms.isMessageInBuffer()) {
+            nextionComms.getData(&uiData);
+            if (uiData.page == 2) {
+                switch (uiData.value) {
+                case 1:
+                    //Scroll left
+                    if (cartridgeSelected > 0) {
+                        cartridgeSelected--;
+                    }
+                    else {
+                        cartridgeSelected = cartridgeCount - 1;
+                    }
+                    cartridgeData.id = cartIndex[cartridgeSelected].id;
+                    strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                    nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
+                    break;
+                case 2:
+                    // scroll right
+                    if (cartridgeSelected < (cartridgeCount - 1)) {
+                        cartridgeSelected++;
+                    }
+                    else {
+                        cartridgeSelected = 0;
+                    }
+                    cartridgeData.id = cartIndex[cartridgeSelected].id;
+                    strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                    nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
+                    break;
+                case 3:
+                    // Back to previous page
+                    computerState = RIFLE;
+                    cartridgeFirstRun = true;
+                    break;
+                case 4:
+                    // navigate to range page
+                    computerState = RANGE;
+                    cartridgeFirstRun = true;
+                    break;
+                }
+            }
+        }
+
+        break;
+    case RANGE:
+        if (rangeFirstRun) {
+            debugln("Range");
+            nextionComms.sendPageToNextion(3);
+            rangeFirstRun = false;
+        }
+
+        if (nextionComms.isMessageInBuffer()) {
+            nextionComms.getData(&uiData);
+            if (uiData.page == 3) {
+                switch (uiData.value) {
+                case 1:
+                    computerState = CARTRIDGE;
+                    uiData.page = 2;
+                    break;
+                case 2:
+                    // Do something cool with the range
+                    break;
+                }
+            }
+        }
+
+        break;
+    case ENVIRONMENT:  // We might not need this machine state
+        break;
+    case WINDDIRECTION:
+    case LOCATION:
+        break;
+    case AZIMUTH:
+        break;
+    case GEOMETRY:
+        break;
+    case SOLUTION:
+        break;
+    case CALIBRATION:
+        break;
+    }
 }
