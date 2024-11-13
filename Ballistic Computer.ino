@@ -149,7 +149,7 @@ void demoTheRest()
 
 	dbService.loadRifleDetail(2, &rifleData);
 
-	Serial.println(rifleData.desc);
+    Serial.println(rifleData.desc); 0;
 
 	dbService.loadCartridgeDetail(1, 3, &cartridgeData);
 
@@ -247,7 +247,7 @@ void loop()
                     nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
                     break;
                 case 3:
-                    // navigate to cartridge page
+                    dbService.loadRifleDetail(rifleIndex[rifleSelected].id, &rifleData);    // Load up the details for the selected rifle
                     nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
                     computerState = CARTRIDGE;
                     rifleFirstRun = true;
@@ -309,6 +309,7 @@ void loop()
                     break;
                 case 4:
                     // navigate to range page
+                    dbService.loadCartridgeDetail(rifleIndex[rifleSelected].id, cartIndex[cartridgeSelected].id, &cartridgeData);
                     computerState = RANGE;
                     cartridgeFirstRun = true;
                     break;
@@ -321,6 +322,8 @@ void loop()
         if (rangeFirstRun) {
             debugln("Range");
             nextionComms.sendPageToNextion(3);
+            Serial.printf("Rifle scope height: %f\t", rifleData.sh);
+            Serial.printf("Cartridge BC: %f\t\n", cartridgeData.bc);
             rangeFirstRun = false;
         }
 
@@ -330,7 +333,7 @@ void loop()
                 switch (uiData.value) {
                 case 1:
                     computerState = CARTRIDGE;
-                    uiData.page = 2;
+                    rangeFirstRun = true;
                     break;
                 case 2:
                     // Do something cool with the range
