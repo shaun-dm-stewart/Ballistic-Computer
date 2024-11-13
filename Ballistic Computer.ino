@@ -31,7 +31,7 @@ int rifleSelected = 0;
 CartridgeData cartridgeData;
 int cartridgeCount = 0;
 int cartridgeSelected = 0;
-CartridgeInfo cartridge;
+CartridgeInfo cartridgeInfo;
 ShotLocationInfo shotLocationInfo;
 WeatherCondition weatherCondition;
 ShotSolution shotSolution;
@@ -64,12 +64,12 @@ void setup()
 	rifleInfo.WindageClicksPerMOA = 0.5;
 	rifleInfo.ZeroDistance = 109.361;
 
-	cartridge.MuzzleVelocity = 2591.86;
-	cartridge.BC = 0.505;
-	cartridge.DragFunc = G1;
-	cartridge.WeightGrains = 175;
-	cartridge.BulletLength = 1.24;
-	cartridge.Caliber = 0.308;
+	cartridgeInfo.MuzzleVelocity = 2591.86;
+	cartridgeInfo.BC = 0.505;
+	cartridgeInfo.DragFunc = G1;
+	cartridgeInfo.WeightGrains = 175;
+	cartridgeInfo.BulletLength = 1.24;
+	cartridgeInfo.Caliber = 0.308;
 
 	shotLocationInfo.Latitude = 45;
 	shotLocationInfo.ShotAzimuth = 270;
@@ -110,7 +110,7 @@ void setup()
 
 void getFiringSolution()
 {
-	Rifle rifle(&rifleInfo, &cartridge, &shotSolution);
+	Rifle rifle(&rifleInfo, &cartridgeInfo, &shotSolution);
 	rifle.Solve(
 		0.0, //shooting angle
 		6.2137119223733395,
@@ -248,6 +248,15 @@ void loop()
                     break;
                 case 3:
                     dbService.loadRifleDetail(rifleIndex[rifleSelected].id, &rifleData);    // Load up the details for the selected rifle
+                    rifleInfo.TwistRate = rifleData.tr;
+                    rifleInfo.ZeroingConditions.Altitude = rifleData.al;
+                    rifleInfo.ZeroingConditions.Barometer = rifleData.ap;
+                    rifleInfo.ZeroingConditions.Temperature = rifleData.te;
+                    rifleInfo.ZeroingConditions.RelativeHumidity = rifleData.rh;
+                    rifleInfo.ScopeHeight = rifleData.sh;
+                    rifleInfo.ElevationClicksPerMOA = rifleData.ec;
+                    rifleInfo.WindageClicksPerMOA = rifleData.wc;
+                    rifleInfo.ZeroDistance = rifleData.zd;
                     nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
                     computerState = CARTRIDGE;
                     rifleFirstRun = true;
@@ -310,6 +319,12 @@ void loop()
                 case 4:
                     // navigate to range page
                     dbService.loadCartridgeDetail(rifleIndex[rifleSelected].id, cartIndex[cartridgeSelected].id, &cartridgeData);
+                    cartridgeInfo.MuzzleVelocity = cartridgeData.mv;
+                    cartridgeInfo.BC = cartridgeData.bc;
+                    cartridgeInfo.DragFunc = G1;    // Should have thought of that before.  Hard coded for now.  Maybe select from display  G1 is the biggest anyway (Must be the best ;)
+                    cartridgeInfo.WeightGrains = cartridgeData.wt;
+                    cartridgeInfo.BulletLength = cartridgeData.bl;
+                    cartridgeInfo.Caliber = cartridgeData.clbr;
                     computerState = RANGE;
                     cartridgeFirstRun = true;
                     break;
@@ -322,8 +337,8 @@ void loop()
         if (rangeFirstRun) {
             debugln("Range");
             nextionComms.sendPageToNextion(3);
-            Serial.printf("Rifle scope height: %f\t", rifleData.sh);
-            Serial.printf("Cartridge BC: %f\t\n", cartridgeData.bc);
+            Serial.printf("Rifle scope height: %f\t", rifleInfo.ScopeHeight);
+            Serial.printf("Cartridge BC: %f\t\n", cartridgeInfo.BC);
             rangeFirstRun = false;
         }
 

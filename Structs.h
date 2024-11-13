@@ -31,7 +31,7 @@ enum ComputerState
 	CALIBRATION
 };
 
-// initial load of rifle and cartridge data will be ids and descriptions
+// initial load of rifle and cartridgeInfo data will be ids and descriptions
 typedef struct
 {
 	int id;
