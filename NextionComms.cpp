@@ -24,7 +24,7 @@ bool NextionComms::sendStringToNextion(char variable[], char value[])
 bool NextionComms::sendIntToNextion(char variable[], int value)
 {
     bool result = true;
-    _serial->printf("%s=\"%s\"\xFF\xFF\xFF", variable, value);
+    _serial->printf("%s=\"%d\"\xFF\xFF\xFF", variable, value);
     return result;
 }
 

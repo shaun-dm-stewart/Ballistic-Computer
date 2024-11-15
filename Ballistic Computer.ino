@@ -85,7 +85,7 @@ void setup()
 	while (!Serial) {} // Wait
 #endif
 	// GPS connection
-	Serial1.begin(SERIAL_BAUD, SERIAL_8N1, GPS_RXD1, GPS_TXD1);
+    Serial1.begin(SERIAL_BAUD, SERIAL_8N1, GPS_RXD1, GPS_TXD1);
 	while (!Serial1) {} // Wait
 
 	// Nextion connection
@@ -94,7 +94,10 @@ void setup()
 
 	Wire.begin(SDAPIN, SCLPIN);
 
-	dbService.begin();
+    if (!dbService.begin())
+    {
+        debugln("Failed to start the database service");
+    }
 
 	while (!bme.begin())
 	{
@@ -177,6 +180,8 @@ void loop()
     static bool rifleFirstRun = true;
     static bool cartridgeFirstRun = true;
     static bool rangeFirstRun = true;
+    static bool latitudeFirstRun = true;
+
     static UIData uiData;
 
     // Let's get the finite state machine going
@@ -191,6 +196,8 @@ void loop()
         if (nextionComms.isMessageInBuffer()) {
             // Run this until the state changes
             nextionComms.getData(&uiData);
+            debug("value: ");
+            debugln(uiData.value);
             if (uiData.page == 0) {
                 if (uiData.value == 1) {
                     computerState = RIFLE;
@@ -337,8 +344,6 @@ void loop()
         if (rangeFirstRun) {
             debugln("Range");
             nextionComms.sendPageToNextion(3);
-            Serial.printf("Rifle scope height: %f\t", rifleInfo.ScopeHeight);
-            Serial.printf("Cartridge BC: %f\t\n", cartridgeInfo.BC);
             rangeFirstRun = false;
         }
 
@@ -351,14 +356,56 @@ void loop()
                     rangeFirstRun = true;
                     break;
                 case 2:
-                    // Do something cool with the range
+                    shotSolution.Range = uiData.range;
+                    debugln(shotSolution.Range);
+                    computerState = LATITUDE;
+                    rangeFirstRun = true;
                     break;
                 }
             }
         }
 
         break;
-    case ENVIRONMENT:  // We might not need this machine state
+    case LATITUDE:  // We might not need this machine state
+        if (latitudeFirstRun)
+        {
+            if (gps.getFix())
+            {
+                getConditions(&weatherCondition);
+                shotLocationInfo.Latitude = gps.getLatitude();
+                weatherCondition.Altitude = gps.getAltitude();
+                debugln(shotLocationInfo.Latitude);
+                nextionComms.sendPageToNextion(4);
+                nextionComms.sendFloatToNextion("lat.txt", shotLocationInfo.Latitude);
+                nextionComms.sendFloatToNextion("al.txt", weatherCondition.Altitude);
+                nextionComms.sendFloatToNextion("te.txt", weatherCondition.Temperature);
+                nextionComms.sendFloatToNextion("rh.txt", weatherCondition.RelativeHumidity * 100);
+                nextionComms.sendFloatToNextion("ap.txt", weatherCondition.Barometer);
+                latitudeFirstRun = false;
+            }
+        }
+
+        if (nextionComms.isMessageInBuffer())
+        {
+            nextionComms.getData(&uiData);
+            debug("Value: ");
+            debugln(uiData.value);
+            if (uiData.page == 4)
+            {
+                switch (uiData.value)
+                {
+                case 0: // The page is ready to accept data
+                    break;
+                case 1:
+                    computerState = RANGE;
+                    latitudeFirstRun = true;
+                    break;
+                case 2:
+                    break;
+                }
+            }
+        }
+
         break;
     case WINDDIRECTION:
     case LOCATION:

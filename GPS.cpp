@@ -26,6 +26,8 @@ int GPS::decodeSentence()
     if (gps.location.isValid())
     {
         _altitude = gps.altitude.feet();
+        Serial.print("Altitude: ");
+        Serial.println(_altitude);
         result += 2;
     }
 

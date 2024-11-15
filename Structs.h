@@ -22,7 +22,7 @@ enum ComputerState
 	RIFLE,
 	CARTRIDGE,
 	RANGE,
-	ENVIRONMENT,	// We might not need this machine state
+	LATITUDE,	// We might not need this machine state
 	WINDDIRECTION,
 	LOCATION,
 	AZIMUTH,
