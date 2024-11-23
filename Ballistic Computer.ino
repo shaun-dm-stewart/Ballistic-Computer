@@ -4,6 +4,7 @@
  Author:	Shaun Stewart
 */
 
+#include <Adafruit_BNO055.h>
 #include <HardwareSerial.h>
 #include <TinyGPS++.h>
 #include <TinyGPSPlus.h>
@@ -12,6 +13,7 @@
 #include <Wire.h>
 #include <BME280I2C.h>
 #include <BME280.h>
+#include <math.h>
 #include "Constants.h"
 #include "Structs.h"
 #include "Rifle.h"
