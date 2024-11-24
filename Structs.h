@@ -19,6 +19,7 @@ enum DragFunction
 enum ComputerState
 {
 	IDLE,
+	CALIBRATION,
 	RIFLE,
 	CARTRIDGE,
 	RANGE,
@@ -27,8 +28,7 @@ enum ComputerState
 	LOCATION,
 	AZIMUTH,
 	GEOMETRY,
-	SOLUTION,
-	CALIBRATION
+	SOLUTION
 };
 
 // initial load of rifle and cartridgeInfo data will be ids and descriptions

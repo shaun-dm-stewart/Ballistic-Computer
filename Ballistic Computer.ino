@@ -21,6 +21,7 @@
 #include "Climate.h"
 #include "GPS.h"
 #include "NextionComms.h"
+#include "Compass.h"
 
 #define DEBUG
 
@@ -42,6 +43,7 @@ GPS gps;
 DateAndTime dateAndTime;
 ComputerState computerState = IDLE;
 NextionComms nextionComms;
+Compass compass;
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -109,6 +111,8 @@ void setup()
 	gps.begin(&Serial1);
 	
 	nextionComms.begin(&Serial2);
+
+    compass.begin();
 
     debugln("");
 }
@@ -179,10 +183,12 @@ void demoTheRest()
 void loop()
 {
     static bool idleFirstRun = true;
+    static bool calibrationFirstRun = true;
     static bool rifleFirstRun = true;
     static bool cartridgeFirstRun = true;
     static bool rangeFirstRun = true;
     static bool latitudeFirstRun = true;
+    static bool isCalibrated = false;
 
     static UIData uiData;
 
@@ -209,6 +215,42 @@ void loop()
         }
 
         break;
+    case CALIBRATION:
+        if (calibrationFirstRun)
+        { 
+            debugln("Calibrating");
+            idleFirstRun = false;
+            isCalibrated = false;
+            nextionComms.sendPageToNextion(1);
+            nextionComms.sendStringToNextion("calib.txt", "");
+        }
+
+        if (isCalibrated == false) 
+        {
+            if (compass.calibrate())
+            {
+                nextionComms.sendStringToNextion("calib.txt", "Calibrated");
+                isCalibrated = true;
+            }
+        }
+
+        if (isCalibrated)
+        {
+            if (nextionComms.isMessageInBuffer()) {
+                nextionComms.getData(&uiData);
+                if (uiData.page == 1) {
+                    switch (uiData.value) {
+                        case 1:
+                            computerState = RIFLE;
+                            idleFirstRun = true;
+                            isCalibrated = false;
+                            break;
+                    }
+                }
+            }
+        }
+
+        break;
     case RIFLE:
         if (rifleFirstRun) {
             // One shots in here on entry to this state
@@ -222,14 +264,14 @@ void loop()
                 rifleData.id = rifleIndex[rifleSelected].id;
                 strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
                 nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
-                nextionComms.sendPageToNextion(1);
+                nextionComms.sendPageToNextion(2);
                 rifleFirstRun = false;
             }
         }
 
         if (nextionComms.isMessageInBuffer()) {
             nextionComms.getData(&uiData);
-            if (uiData.page == 1) {
+            if (uiData.page == 2) {
                 switch (uiData.value) {
                 case 1:
                     //Scroll left
@@ -287,14 +329,14 @@ void loop()
                 cartridgeData.id = cartIndex[cartridgeSelected].id;
                 strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
                 nextionComms.sendStringToNextion("globals.cartname.txt", cartridgeData.desc);
-                nextionComms.sendPageToNextion(2);
+                nextionComms.sendPageToNextion(3);
                 cartridgeFirstRun = false;
             }
         }
 
         if (nextionComms.isMessageInBuffer()) {
             nextionComms.getData(&uiData);
-            if (uiData.page == 2) {
+            if (uiData.page == 3) {
                 switch (uiData.value) {
                 case 1:
                     //Scroll left
@@ -345,13 +387,13 @@ void loop()
     case RANGE:
         if (rangeFirstRun) {
             debugln("Range");
-            nextionComms.sendPageToNextion(3);
+            nextionComms.sendPageToNextion(4);
             rangeFirstRun = false;
         }
 
         if (nextionComms.isMessageInBuffer()) {
             nextionComms.getData(&uiData);
-            if (uiData.page == 3) {
+            if (uiData.page == 4) {
                 switch (uiData.value) {
                 case 1:
                     computerState = CARTRIDGE;
@@ -377,7 +419,7 @@ void loop()
                 shotLocationInfo.Latitude = gps.getLatitude();
                 weatherCondition.Altitude = gps.getAltitude();
                 debugln(shotLocationInfo.Latitude);
-                nextionComms.sendPageToNextion(4);
+                nextionComms.sendPageToNextion(5);
                 nextionComms.sendFloatToNextion("lat.txt", shotLocationInfo.Latitude);
                 nextionComms.sendFloatToNextion("al.txt", weatherCondition.Altitude);
                 nextionComms.sendFloatToNextion("te.txt", weatherCondition.Temperature);
@@ -392,7 +434,7 @@ void loop()
             nextionComms.getData(&uiData);
             debug("Value: ");
             debugln(uiData.value);
-            if (uiData.page == 4)
+            if (uiData.page == 5)
             {
                 switch (uiData.value)
                 {
@@ -417,8 +459,6 @@ void loop()
     case GEOMETRY:
         break;
     case SOLUTION:
-        break;
-    case CALIBRATION:
         break;
     }
 }
