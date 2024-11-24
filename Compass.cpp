@@ -8,6 +8,9 @@ Compass::Compass()
 void Compass::begin()
 {
 	myIMU.begin();
+	delay(1000);
+	myIMU.setExtCrystalUse(true);
+	millisOld = millis();
 }
 
 /// <summary>
@@ -68,7 +71,7 @@ void Compass::calculate()
 	phiFold = phiFnew;
 
 	// Leave this out because there will be enough to be going on with elsewhere
-	// delay(BNO055_SAMPLERATE_DELAY_MS);
+	delay(BNO055_SAMPLERATE_DELAY_MS);
 }
 
 /// <summary>
@@ -85,8 +88,9 @@ float Compass::getSlope()
 /// Gets the azimuth of the target
 /// </summary>
 /// <returns>returns 0 to 359 degrees</returns>
-double Compass::getAzimuth()
+float Compass::getAzimuth()
 {
+	calculate();
 	return psi;
 }
 
@@ -96,10 +100,12 @@ double Compass::getAzimuth()
 /// <returns></returns>
 float Compass::getPitch()
 {
+	calculate();
 	return theta;
 }
 
 float Compass::getRoll()
 {
+	calculate();
 	return phi;
 }

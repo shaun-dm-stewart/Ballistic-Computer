@@ -4,9 +4,9 @@
 #define _Compass_h
 
 #if defined(ARDUINO) && ARDUINO >= 100
-	#include "arduino.h"
+#include "arduino.h"
 #else
-	#include "WProgram.h"
+#include "WProgram.h"
 #endif
 
 #include <Wire.h>
@@ -25,44 +25,43 @@ typedef struct
 
 class Compass
 {
-	public:
-		Compass();
-		void begin();
-		bool calibrate();
-		void getCalibrationState(CalibrationStatus *calibrationStatus);
-		float getPitch();
-		float getRoll();
-		float getSlope();
-		double getAzimuth();
-	
-	private:
-		void calculate();
-		Adafruit_BNO055 myIMU = Adafruit_BNO055();
-		float theta;
-		float thetaM;
-		float thetaFold = 0;
-		float thetaFnew;
-		float thetaG = 0;
-		float thetaRad;
+public:
+	Compass();
+	void begin();
+	bool calibrate();
+	void getCalibrationState(CalibrationStatus* calibrationStatus);
+	float getPitch();
+	float getRoll();
+	float getSlope();
+	float getAzimuth();
 
-		float phi;
-		float phiM;
-		float phiFold = 0;
-		float phiFnew;
-		float phiG = 0;
-		float phiRad;
+private:
+	void calculate();
+	Adafruit_BNO055 myIMU = Adafruit_BNO055();
+	float theta;
+	float thetaM;
+	float thetaFold = 0;
+	float thetaFnew;
+	float thetaG = 0;
+	float thetaRad;
 
-		float Xm;
-		float Ym;
-		float psi;
+	float phi;
+	float phiM;
+	float phiFold = 0;
+	float phiFnew;
+	float phiG = 0;
+	float phiRad;
 
-		float dt;
-		unsigned long millisOld;
-		uint8_t system = 0;
-		uint8_t gyro = 0;
-		uint8_t accel = 0;
-		uint8_t mag = 0;
+	float Xm;
+	float Ym;
+	float psi;
+
+	float dt;
+	unsigned long millisOld;
+	uint8_t system = 0;
+	uint8_t gyro = 0;
+	uint8_t accel = 0;
+	uint8_t mag = 0;
 };
 
 #endif
-
