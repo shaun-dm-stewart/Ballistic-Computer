@@ -44,6 +44,7 @@ DateAndTime dateAndTime;
 ComputerState computerState = IDLE;
 NextionComms nextionComms;
 Compass compass;
+CalibrationStatus calState;
 
 #ifdef DEBUG 
 #define debugln(x) Serial.println(x)
@@ -208,7 +209,7 @@ void loop()
             debugln(uiData.value);
             if (uiData.page == 0) {
                 if (uiData.value == 1) {
-                    computerState = RIFLE;
+                    computerState = CALIBRATION;
                     idleFirstRun = true;
                 }
             }
@@ -219,7 +220,7 @@ void loop()
         if (calibrationFirstRun)
         { 
             debugln("Calibrating");
-            idleFirstRun = false;
+            calibrationFirstRun = false;
             isCalibrated = false;
             nextionComms.sendPageToNextion(1);
             nextionComms.sendStringToNextion("calib.txt", "");
@@ -227,6 +228,8 @@ void loop()
 
         if (isCalibrated == false) 
         {
+            compass.getCalibrationState(&calState);
+            Serial.printf("System: %d\tAccel: %d\tGyro: %d\tMag: %d\n", calState.system, calState.accel, calState.gyro, calState.mag);
             if (compass.calibrate())
             {
                 nextionComms.sendStringToNextion("calib.txt", "Calibrated");
@@ -242,7 +245,7 @@ void loop()
                     switch (uiData.value) {
                         case 1:
                             computerState = RIFLE;
-                            idleFirstRun = true;
+                            calibrationFirstRun = true;
                             isCalibrated = false;
                             break;
                     }
@@ -298,6 +301,11 @@ void loop()
                     nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
                     break;
                 case 3:
+                    // Back to previous page
+                    computerState = CALIBRATION;
+                    rifleFirstRun = true;
+                    break;
+                case 4:
                     dbService.loadRifleDetail(rifleIndex[rifleSelected].id, &rifleData);    // Load up the details for the selected rifle
                     rifleInfo.TwistRate = rifleData.tr;
                     rifleInfo.ZeroingConditions.Altitude = rifleData.al;
@@ -308,7 +316,7 @@ void loop()
                     rifleInfo.ElevationClicksPerMOA = rifleData.ec;
                     rifleInfo.WindageClicksPerMOA = rifleData.wc;
                     rifleInfo.ZeroDistance = rifleData.zd;
-                    nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
+                    //nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
                     computerState = CARTRIDGE;
                     rifleFirstRun = true;
                     break;
@@ -387,6 +395,7 @@ void loop()
     case RANGE:
         if (rangeFirstRun) {
             debugln("Range");
+            nextionComms.sendIntToNextion("globals.range.val", (int)shotSolution.Range);
             nextionComms.sendPageToNextion(4);
             rangeFirstRun = false;
         }

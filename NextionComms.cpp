@@ -104,8 +104,9 @@ bool NextionComms::getData(UIData* data)
     case 0:     // We have the data we need so there is nothing to do
     case 1:
     case 2:
-        break;
     case 3:
+        break;
+    case 4:
         data->range = _doc["range"];
         break;
     default:
