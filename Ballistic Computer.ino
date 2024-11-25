@@ -89,6 +89,9 @@ void setup()
 	Serial.begin(SERIAL_BAUD);
 	while (!Serial) {} // Wait
 #endif
+    // Button pin
+    pinMode(BUTTON_PIN, INPUT_PULLDOWN);
+
 	// GPS connection
     Serial1.begin(SERIAL_BAUD, SERIAL_8N1, GPS_RXD1, GPS_TXD1);
 	while (!Serial1) {} // Wait
@@ -123,7 +126,7 @@ void getFiringSolution()
 	Rifle rifle(&rifleInfo, &cartridgeInfo, &shotSolution);
 	rifle.Solve(
 		0.0, //shooting angle
-		6.2137119223733395,
+		6.2137119223733395,  //Wind speed
 		90, //wind direction angle (degrees)
 		546.807,
 		&weatherCondition,
@@ -188,8 +191,11 @@ void loop()
     static bool rifleFirstRun = true;
     static bool cartridgeFirstRun = true;
     static bool rangeFirstRun = true;
-    static bool latitudeFirstRun = true;
+    static bool environmentFirstRun = true;
     static bool isCalibrated = false;
+    static bool windageFirstRun = true;
+    static bool anglesFirstRun = true;
+    static bool solutionFirstRun = true;
 
     static UIData uiData;
 
@@ -411,7 +417,7 @@ void loop()
                 case 2:
                     shotSolution.Range = uiData.range;
                     debugln(shotSolution.Range);
-                    computerState = LATITUDE;
+                    computerState = ENVIRONMENT;
                     rangeFirstRun = true;
                     break;
                 }
@@ -419,8 +425,8 @@ void loop()
         }
 
         break;
-    case LATITUDE:  // We might not need this machine state
-        if (latitudeFirstRun)
+    case ENVIRONMENT:
+        if (environmentFirstRun)
         {
             if (gps.getFix())
             {
@@ -434,7 +440,7 @@ void loop()
                 nextionComms.sendFloatToNextion("te.txt", weatherCondition.Temperature);
                 nextionComms.sendFloatToNextion("rh.txt", weatherCondition.RelativeHumidity * 100);
                 nextionComms.sendFloatToNextion("ap.txt", weatherCondition.Barometer);
-                latitudeFirstRun = false;
+                environmentFirstRun = false;
             }
         }
 
@@ -451,7 +457,7 @@ void loop()
                     break;
                 case 1:
                     computerState = RANGE;
-                    latitudeFirstRun = true;
+                    environmentFirstRun = true;
                     break;
                 case 2:
                     break;
@@ -460,14 +466,25 @@ void loop()
         }
 
         break;
-    case WINDDIRECTION:
-    case LOCATION:
+    case WINDAGE:
+        // In here we prompt the shooter to point the device directly into wind and press the button when done.
+        // The user is prompted to enter the wind speed on the same screen
+        if (windageFirstRun) 
+        {
+            debugln("Windage");
+            nextionComms.sendIntToNextion("globals.speed.val", (int)shotLocationInfo.WindSpeed);
+            nextionComms.sendIntToNextion("globals.direction.val", (int)shotLocationInfo.WindAngle);
+            nextionComms.sendPageToNextion(6);
+            rangeFirstRun = false;
+        }
+
         break;
-    case AZIMUTH:
-        break;
-    case GEOMETRY:
+    case ANGLES:
+        // In here the user is prompted to pont the device directly at the target and press the button when done
+        // the imu will register the inclination and azimuth of the target
         break;
     case SOLUTION:
+        // Here the firing solution is displayed in terms of windage and elevation corrections.
         break;
     }
 }

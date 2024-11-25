@@ -23,11 +23,9 @@ enum ComputerState
 	RIFLE,
 	CARTRIDGE,
 	RANGE,
-	LATITUDE,	// We might not need this machine state
-	WINDDIRECTION,
-	LOCATION,
-	AZIMUTH,
-	GEOMETRY,
+	ENVIRONMENT,
+	WINDAGE,
+	ANGLES,
 	SOLUTION
 };
 
@@ -130,6 +128,10 @@ typedef struct
 {
 	double Latitude;
 	double ShotAzimuth;
+	double WindAngle;
+	double WindSpeed;
+	double shootingAngle;
+	double Range;
 } ShotLocationInfo;
 
 typedef struct UIData

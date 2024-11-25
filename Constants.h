@@ -30,4 +30,7 @@ const uint8_t MOSIPIN = 23;
 const uint8_t MISOPIN = 19;
 const uint8_t SCKPIN = 18;
 
+// Confirm button pint
+const uint8_t BUTTON_PIN = 13;
+
 #endif
