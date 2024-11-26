@@ -21,4 +21,4 @@ My current thoughts on a bill of materials are:<br>
 1 x 3V3 power supply      - To provide power for the instrumentation<br>
 1 x SD card module        - To store the necessary data
 
-The exterior ballistics calculations were influenced by the Gnu Exterior Ballistics library.  This version has been modified to avoid the need for dynamic memory allocation and returns return a firing solution for a specified range.  The solution is calculated based upon the range and the measured environmental conditions and geolocation information.
+The exterior ballistics calculations were influenced by the Gnu Exterior Ballistics library.  This version has been modified to avoid the need for dynamic memory allocation and returns return a firing solution for a specified range.  The solution is calculated based upon all of the information mentioned above in paragraph 2.
