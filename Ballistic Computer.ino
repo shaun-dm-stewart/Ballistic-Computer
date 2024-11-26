@@ -122,68 +122,68 @@ void setup()
     debugln("");
 }
 
-void getFiringSolution()
-{
-	Rifle rifle(&rifleInfo, &cartridgeInfo, &shotSolution);
-	rifle.Solve(
-		0.0, //shooting angle
-		6.2137119223733395,  //Wind speed
-		90, //wind direction angle (degrees)
-		546.807,
-		&weatherCondition,
-		&shotLocationInfo);
-	debug("Vertical MOA correction: ");
-	debugln(shotSolution.VerticalMOA);
-	getConditions(&weatherCondition);
-	debug("Temp: ");
-	debug(weatherCondition.Temperature);
-	debug("°F");
-	debug("\t\tHumidity: ");
-	debug(weatherCondition.RelativeHumidity);
-	debug("% RH");
-	debug("\t\tPressure: ");
-	debug(weatherCondition.Barometer);
-	debugln(" in Hg");
-}
+//void getFiringSolution()
+//{
+//	Rifle rifle(&rifleInfo, &cartridgeInfo, &shotSolution);
+//	rifle.Solve(
+//		0.0, //shooting angle
+//		6.2137119223733395,  //Wind speed
+//		90, //wind direction angle (degrees)
+//		546.807,
+//		&weatherCondition,
+//		&shotLocationInfo);
+//	debug("Vertical MOA correction: ");
+//	debugln(shotSolution.VerticalMOA);
+//	getConditions(&weatherCondition);
+//	debug("Temp: ");
+//	debug(weatherCondition.Temperature);
+//	debug("°F");
+//	debug("\t\tHumidity: ");
+//	debug(weatherCondition.RelativeHumidity);
+//	debug("% RH");
+//	debug("\t\tPressure: ");
+//	debug(weatherCondition.Barometer);
+//	debugln(" in Hg");
+//}
 
-void demoTheRest()
-{
-	getFiringSolution();
-	int count = dbService.loadRifleIndex(rifleIndex);
-	for (int i = 0; i < count; i++)
-	{
-		Serial.println(rifleIndex[i].desc);
-	}
-
-	count = dbService.loadCartridgeIndex(rifleIndex[0].id, cartIndex);
-	for (int i = 0; i < count; i++)
-	{
-		Serial.println(cartIndex[i].desc);
-	}
-
-	dbService.loadRifleDetail(2, &rifleData);
-
-    Serial.println(rifleData.desc); 0;
-
-	dbService.loadCartridgeDetail(1, 3, &cartridgeData);
-
-	Serial.println(cartridgeData.desc);
-
-	if (gps.getFix())
-	{
-		debug("Latitude: ");
-		debug(gps.getLatitude());
-		debug("\t");
-		debug("Altitude: ");
-		debug(gps.getAltitude());
-		debug("\t");
-		debug("year: ");
-		debug(gps.getDateTime().year);
-		debug("\n");
-	}
-
-	delay(2000);
-}
+//void demoTheRest()
+//{
+//	getFiringSolution();
+//	int count = dbService.loadRifleIndex(rifleIndex);
+//	for (int i = 0; i < count; i++)
+//	{
+//		Serial.println(rifleIndex[i].desc);
+//	}
+//
+//	count = dbService.loadCartridgeIndex(rifleIndex[0].id, cartIndex);
+//	for (int i = 0; i < count; i++)
+//	{
+//		Serial.println(cartIndex[i].desc);
+//	}
+//
+//	dbService.loadRifleDetail(2, &rifleData);
+//
+//    Serial.println(rifleData.desc); 0;
+//
+//	dbService.loadCartridgeDetail(1, 3, &cartridgeData);
+//
+//	Serial.println(cartridgeData.desc);
+//
+//	if (gps.getFix())
+//	{
+//		debug("Latitude: ");
+//		debug(gps.getLatitude());
+//		debug("\t");
+//		debug("Altitude: ");
+//		debug(gps.getAltitude());
+//		debug("\t");
+//		debug("year: ");
+//		debug(gps.getDateTime().year);
+//		debug("\n");
+//	}
+//
+//	delay(2000);
+//}
 
 void loop()
 {
@@ -493,8 +493,6 @@ void loop()
 
             break;
         case WINDAGE:
-            // In here we prompt the shooter to point the device directly into wind and press the button when done.
-            // The user is prompted to enter the wind speed on the same screen
             if (windageFirstRun) 
             {
                 debugln("Windage");
@@ -537,8 +535,6 @@ void loop()
 
             break;
         case ANGLES:
-            // In here the user is prompted to pont the device directly at the target and press the button when done
-            // the imu will register the inclination and azimuth of the target
             if (anglesFirstRun)
             {
                 debugln("Angles");
@@ -584,7 +580,6 @@ void loop()
 
             break;
         case SOLUTION:
-            // Here the firing solution is displayed in terms of windage and elevation corrections.
             if (anglesFirstRun)
             {
                 debugln("Solution");
