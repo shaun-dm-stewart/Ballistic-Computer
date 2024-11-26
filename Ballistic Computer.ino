@@ -25,6 +25,7 @@
 
 #define DEBUG
 
+Rifle rifle;
 RifleData rifleData;
 IndexItem rifleIndex[MAXRIFLECOUNT];
 IndexItem cartIndex[MAXCARTRIDGECOUNT];
@@ -201,290 +202,431 @@ void loop()
 
     // Let's get the finite state machine going
 
-    switch (computerState) {
-    case IDLE:
-        if (idleFirstRun) {
-            debugln("Idle");
-            idleFirstRun = false;
-        }
+    switch (computerState) 
+    {
+        case IDLE:
+            if (idleFirstRun) 
+            {
+                debugln("Idle");
+                idleFirstRun = false;
+            }
 
-        if (nextionComms.isMessageInBuffer()) {
-            // Run this until the state changes
-            nextionComms.getData(&uiData);
-            debug("value: ");
-            debugln(uiData.value);
-            if (uiData.page == 0) {
-                if (uiData.value == 1) {
-                    computerState = CALIBRATION;
-                    idleFirstRun = true;
+            if (nextionComms.isMessageInBuffer()) 
+            {
+                // Run this until the state changes
+                nextionComms.getData(&uiData);
+                debug("value: ");
+                debugln(uiData.value);
+                if (uiData.page == 0) {
+                    if (uiData.value == 1) {
+                        computerState = CALIBRATION;
+                        idleFirstRun = true;
+                    }
                 }
             }
-        }
 
-        break;
-    case CALIBRATION:
-        if (calibrationFirstRun)
-        { 
-            debugln("Calibrating");
-            calibrationFirstRun = false;
-            isCalibrated = false;
-            nextionComms.sendPageToNextion(1);
-            nextionComms.sendStringToNextion("calib.txt", "");
-        }
-
-        if (isCalibrated == false) 
-        {
-            compass.getCalibrationState(&calState);
-            Serial.printf("System: %d\tAccel: %d\tGyro: %d\tMag: %d\n", calState.system, calState.accel, calState.gyro, calState.mag);
-            if (compass.calibrate())
-            {
-                nextionComms.sendStringToNextion("calib.txt", "Calibrated");
-                isCalibrated = true;
+            break;
+        case CALIBRATION:
+            if (calibrationFirstRun)
+            { 
+                debugln("Calibrating");
+                calibrationFirstRun = false;
+                isCalibrated = false;
+                nextionComms.sendPageToNextion(1);
+                nextionComms.sendStringToNextion("calib.txt", "");
             }
-        }
 
-        if (isCalibrated)
-        {
-            if (nextionComms.isMessageInBuffer()) {
+            if (isCalibrated == false) 
+            {
+                compass.getCalibrationState(&calState);
+                Serial.printf("System: %d\tAccel: %d\tGyro: %d\tMag: %d\n", calState.system, calState.accel, calState.gyro, calState.mag);
+                if (compass.calibrate())
+                {
+                    nextionComms.sendStringToNextion("calib.txt", "Calibrated");
+                    isCalibrated = true;
+                }
+            }
+
+            if (isCalibrated)
+            {
+                if (nextionComms.isMessageInBuffer()) 
+                {
+                    nextionComms.getData(&uiData);
+                    if (uiData.page == 1) {
+                        switch (uiData.value) {
+                            case 1:
+                                computerState = RIFLE;
+                                calibrationFirstRun = true;
+                                isCalibrated = false;
+                                break;
+                        }
+                    }
+                }
+            }
+
+            break;
+        case RIFLE:
+            if (rifleFirstRun) 
+            {
+                // One shots in here on entry to this state
+                if (rifleCount == 0) 
+                {
+                    debugln("Rifle");
+                    rifleCount = dbService.loadRifleIndex(rifleIndex);
+                    rifleSelected = 0;
+                    debugln(rifleCount);
+                }
+                if (rifleCount > 0) 
+                {
+                    rifleData.id = rifleIndex[rifleSelected].id;
+                    strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                    nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
+                    nextionComms.sendPageToNextion(2);
+                    rifleFirstRun = false;
+                }
+            }
+
+            if (nextionComms.isMessageInBuffer()) 
+            {
                 nextionComms.getData(&uiData);
-                if (uiData.page == 1) {
-                    switch (uiData.value) {
+                if (uiData.page == 2) 
+                {
+                    switch (uiData.value)
+                    {
                         case 1:
-                            computerState = RIFLE;
-                            calibrationFirstRun = true;
-                            isCalibrated = false;
+                            //Scroll left
+                            if (rifleSelected > 0) {
+                                rifleSelected--;
+                            }
+                            else {
+                                rifleSelected = rifleCount - 1;
+                            }
+                            rifleData.id = rifleIndex[rifleSelected].id;
+                            strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                            nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
+                            break;
+                        case 2:
+                            // scroll right
+                            if (rifleSelected < (rifleCount - 1)) {
+                                rifleSelected++;
+                            }
+                            else {
+                                rifleSelected = 0;
+                            }
+                            rifleData.id = rifleIndex[rifleSelected].id;
+                            strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
+                            nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
+                            break;
+                        case 3:
+                            // Back to previous page
+                            computerState = CALIBRATION;
+                            rifleFirstRun = true;
+                            break;
+                        case 4:
+                            dbService.loadRifleDetail(rifleIndex[rifleSelected].id, &rifleData);    // Load up the details for the selected rifle
+                            rifleInfo.TwistRate = rifleData.tr;
+                            rifleInfo.ZeroingConditions.Altitude = rifleData.al;
+                            rifleInfo.ZeroingConditions.Barometer = rifleData.ap;
+                            rifleInfo.ZeroingConditions.Temperature = rifleData.te;
+                            rifleInfo.ZeroingConditions.RelativeHumidity = rifleData.rh;
+                            rifleInfo.ScopeHeight = rifleData.sh;
+                            rifleInfo.ElevationClicksPerMOA = rifleData.ec;
+                            rifleInfo.WindageClicksPerMOA = rifleData.wc;
+                            rifleInfo.ZeroDistance = rifleData.zd;
+                            computerState = CARTRIDGE;
+                            rifleFirstRun = true;
+                            break;
+                        default:
                             break;
                     }
                 }
             }
-        }
 
-        break;
-    case RIFLE:
-        if (rifleFirstRun) {
-            // One shots in here on entry to this state
-            if (rifleCount == 0) {
-                debugln("Rifle");
-                rifleCount = dbService.loadRifleIndex(rifleIndex);
-                rifleSelected = 0;
-                debugln(rifleCount);
-            }
-            if (rifleCount > 0) {
-                rifleData.id = rifleIndex[rifleSelected].id;
-                strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-                nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
-                nextionComms.sendPageToNextion(2);
-                rifleFirstRun = false;
-            }
-        }
-
-        if (nextionComms.isMessageInBuffer()) {
-            nextionComms.getData(&uiData);
-            if (uiData.page == 2) {
-                switch (uiData.value) {
-                case 1:
-                    //Scroll left
-                    if (rifleSelected > 0) {
-                        rifleSelected--;
-                    }
-                    else {
-                        rifleSelected = rifleCount - 1;
-                    }
-                    rifleData.id = rifleIndex[rifleSelected].id;
-                    strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-                    nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
-                    break;
-                case 2:
-                    // scroll right
-                    if (rifleSelected < (rifleCount - 1)) {
-                        rifleSelected++;
-                    }
-                    else {
-                        rifleSelected = 0;
-                    }
-                    rifleData.id = rifleIndex[rifleSelected].id;
-                    strcpy(rifleData.desc, rifleIndex[rifleSelected].desc);
-                    nextionComms.sendStringToNextion("rifle.t2.txt", rifleData.desc);
-                    break;
-                case 3:
-                    // Back to previous page
-                    computerState = CALIBRATION;
-                    rifleFirstRun = true;
-                    break;
-                case 4:
-                    dbService.loadRifleDetail(rifleIndex[rifleSelected].id, &rifleData);    // Load up the details for the selected rifle
-                    rifleInfo.TwistRate = rifleData.tr;
-                    rifleInfo.ZeroingConditions.Altitude = rifleData.al;
-                    rifleInfo.ZeroingConditions.Barometer = rifleData.ap;
-                    rifleInfo.ZeroingConditions.Temperature = rifleData.te;
-                    rifleInfo.ZeroingConditions.RelativeHumidity = rifleData.rh;
-                    rifleInfo.ScopeHeight = rifleData.sh;
-                    rifleInfo.ElevationClicksPerMOA = rifleData.ec;
-                    rifleInfo.WindageClicksPerMOA = rifleData.wc;
-                    rifleInfo.ZeroDistance = rifleData.zd;
-                    //nextionComms.sendStringToNextion("globals.riflename.txt", rifleData.desc);
-                    computerState = CARTRIDGE;
-                    rifleFirstRun = true;
-                    break;
-                }
-            }
-        }
-
-        break;
-    case CARTRIDGE:
-        if (cartridgeFirstRun == true) {
-            debugln("Cartridge");
-            if (cartridgeCount == 0) {
-                cartridgeCount = dbService.loadCartridgeIndex(rifleData.id, cartIndex);
-                cartridgeSelected = 0;
-                debugln(cartridgeCount);
-            }
-            if (cartridgeCount > 0) {
-                cartridgeData.id = cartIndex[cartridgeSelected].id;
-                strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-                nextionComms.sendStringToNextion("globals.cartname.txt", cartridgeData.desc);
-                nextionComms.sendPageToNextion(3);
-                cartridgeFirstRun = false;
-            }
-        }
-
-        if (nextionComms.isMessageInBuffer()) {
-            nextionComms.getData(&uiData);
-            if (uiData.page == 3) {
-                switch (uiData.value) {
-                case 1:
-                    //Scroll left
-                    if (cartridgeSelected > 0) {
-                        cartridgeSelected--;
-                    }
-                    else {
-                        cartridgeSelected = cartridgeCount - 1;
-                    }
-                    cartridgeData.id = cartIndex[cartridgeSelected].id;
-                    strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-                    nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
-                    break;
-                case 2:
-                    // scroll right
-                    if (cartridgeSelected < (cartridgeCount - 1)) {
-                        cartridgeSelected++;
-                    }
-                    else {
-                        cartridgeSelected = 0;
-                    }
-                    cartridgeData.id = cartIndex[cartridgeSelected].id;
-                    strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
-                    nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
-                    break;
-                case 3:
-                    // Back to previous page
-                    computerState = RIFLE;
-                    cartridgeFirstRun = true;
-                    break;
-                case 4:
-                    // navigate to range page
-                    dbService.loadCartridgeDetail(rifleIndex[rifleSelected].id, cartIndex[cartridgeSelected].id, &cartridgeData);
-                    cartridgeInfo.MuzzleVelocity = cartridgeData.mv;
-                    cartridgeInfo.BC = cartridgeData.bc;
-                    cartridgeInfo.DragFunc = G1;    // Should have thought of that before.  Hard coded for now.  Maybe select from display  G1 is the biggest anyway (Must be the best ;)
-                    cartridgeInfo.WeightGrains = cartridgeData.wt;
-                    cartridgeInfo.BulletLength = cartridgeData.bl;
-                    cartridgeInfo.Caliber = cartridgeData.clbr;
-                    computerState = RANGE;
-                    cartridgeFirstRun = true;
-                    break;
-                }
-            }
-        }
-
-        break;
-    case RANGE:
-        if (rangeFirstRun) {
-            debugln("Range");
-            nextionComms.sendIntToNextion("globals.range.val", (int)shotSolution.Range);
-            nextionComms.sendPageToNextion(4);
-            rangeFirstRun = false;
-        }
-
-        if (nextionComms.isMessageInBuffer()) {
-            nextionComms.getData(&uiData);
-            if (uiData.page == 4) {
-                switch (uiData.value) {
-                case 1:
-                    computerState = CARTRIDGE;
-                    rangeFirstRun = true;
-                    break;
-                case 2:
-                    shotSolution.Range = uiData.range;
-                    debugln(shotSolution.Range);
-                    computerState = ENVIRONMENT;
-                    rangeFirstRun = true;
-                    break;
-                }
-            }
-        }
-
-        break;
-    case ENVIRONMENT:
-        if (environmentFirstRun)
-        {
-            if (gps.getFix())
+            break;
+        case CARTRIDGE:
+            if (cartridgeFirstRun == true) 
             {
-                getConditions(&weatherCondition);
-                shotLocationInfo.Latitude = gps.getLatitude();
-                weatherCondition.Altitude = gps.getAltitude();
-                debugln(shotLocationInfo.Latitude);
-                nextionComms.sendPageToNextion(5);
-                nextionComms.sendFloatToNextion("lat.txt", shotLocationInfo.Latitude);
-                nextionComms.sendFloatToNextion("al.txt", weatherCondition.Altitude);
-                nextionComms.sendFloatToNextion("te.txt", weatherCondition.Temperature);
-                nextionComms.sendFloatToNextion("rh.txt", weatherCondition.RelativeHumidity * 100);
-                nextionComms.sendFloatToNextion("ap.txt", weatherCondition.Barometer);
-                environmentFirstRun = false;
-            }
-        }
-
-        if (nextionComms.isMessageInBuffer())
-        {
-            nextionComms.getData(&uiData);
-            debug("Value: ");
-            debugln(uiData.value);
-            if (uiData.page == 5)
-            {
-                switch (uiData.value)
+                debugln("Cartridge");
+                if (cartridgeCount == 0) 
                 {
-                case 0: // The page is ready to accept data
-                    break;
-                case 1:
-                    computerState = RANGE;
-                    environmentFirstRun = true;
-                    break;
-                case 2:
-                    break;
+                    cartridgeCount = dbService.loadCartridgeIndex(rifleData.id, cartIndex);
+                    cartridgeSelected = 0;
+                    debugln(cartridgeCount);
+                }
+            
+                if (cartridgeCount > 0) 
+                {
+                    cartridgeData.id = cartIndex[cartridgeSelected].id;
+                    strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                    nextionComms.sendStringToNextion("globals.cartname.txt", cartridgeData.desc);
+                    nextionComms.sendPageToNextion(3);
+                    cartridgeFirstRun = false;
                 }
             }
-        }
 
-        break;
-    case WINDAGE:
-        // In here we prompt the shooter to point the device directly into wind and press the button when done.
-        // The user is prompted to enter the wind speed on the same screen
-        if (windageFirstRun) 
-        {
-            debugln("Windage");
-            nextionComms.sendIntToNextion("globals.speed.val", (int)shotLocationInfo.WindSpeed);
-            nextionComms.sendIntToNextion("globals.direction.val", (int)shotLocationInfo.WindAngle);
-            nextionComms.sendPageToNextion(6);
-            rangeFirstRun = false;
-        }
+            if (nextionComms.isMessageInBuffer()) 
+            {
+                nextionComms.getData(&uiData);
+                if (uiData.page == 3) 
+                {
+                    switch (uiData.value) 
+                    {
+                        case 1:
+                            //Scroll left
+                            if (cartridgeSelected > 0) {
+                                cartridgeSelected--;
+                            }
+                            else {
+                                cartridgeSelected = cartridgeCount - 1;
+                            }
+                            cartridgeData.id = cartIndex[cartridgeSelected].id;
+                            strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                            nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
+                            break;
+                        case 2:
+                            // scroll right
+                            if (cartridgeSelected < (cartridgeCount - 1)) {
+                                cartridgeSelected++;
+                            }
+                            else {
+                                cartridgeSelected = 0;
+                            }
+                            cartridgeData.id = cartIndex[cartridgeSelected].id;
+                            strcpy(cartridgeData.desc, cartIndex[cartridgeSelected].desc);
+                            nextionComms.sendStringToNextion("cartridge.t2.txt", cartridgeData.desc);
+                            break;
+                        case 3:
+                            // Back to previous page
+                            computerState = RIFLE;
+                            cartridgeFirstRun = true;
+                            break;
+                        case 4:
+                            // navigate to range page
+                            dbService.loadCartridgeDetail(rifleIndex[rifleSelected].id, cartIndex[cartridgeSelected].id, &cartridgeData);
+                            cartridgeInfo.MuzzleVelocity = cartridgeData.mv;
+                            cartridgeInfo.BC = cartridgeData.bc;
+                            cartridgeInfo.DragFunc = G1;    // Should have thought of that before.  Hard coded for now.  Maybe select from display  G1 is the biggest anyway (Must be the best ;)
+                            cartridgeInfo.WeightGrains = cartridgeData.wt;
+                            cartridgeInfo.BulletLength = cartridgeData.bl;
+                            cartridgeInfo.Caliber = cartridgeData.clbr;
+                            computerState = RANGE;
+                            cartridgeFirstRun = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
 
-        break;
-    case ANGLES:
-        // In here the user is prompted to pont the device directly at the target and press the button when done
-        // the imu will register the inclination and azimuth of the target
-        break;
-    case SOLUTION:
-        // Here the firing solution is displayed in terms of windage and elevation corrections.
-        break;
+            break;
+        case RANGE:
+            if (rangeFirstRun) {
+                debugln("Range");
+                nextionComms.sendIntToNextion("globals.range.val", (int)shotSolution.Range);
+                nextionComms.sendPageToNextion(4);
+                rangeFirstRun = false;
+            }
+
+            if (nextionComms.isMessageInBuffer()) {
+                nextionComms.getData(&uiData);
+                if (uiData.page == 4) {
+                    switch (uiData.value) 
+                    {
+                        case 1:
+                            computerState = CARTRIDGE;
+                            rangeFirstRun = true;
+                            break;
+                        case 2:
+                            shotSolution.Range = uiData.range;
+                            debugln(shotSolution.Range);
+                            computerState = ENVIRONMENT;
+                            rangeFirstRun = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            break;
+        case ENVIRONMENT:
+            if (environmentFirstRun)
+            {
+                if (gps.getFix())
+                {
+                    getConditions(&weatherCondition);
+                    shotLocationInfo.Latitude = gps.getLatitude();
+                    weatherCondition.Altitude = gps.getAltitude();
+                    nextionComms.sendPageToNextion(5);
+                    nextionComms.sendFloatToNextion("lat.txt", shotLocationInfo.Latitude);
+                    nextionComms.sendFloatToNextion("al.txt", weatherCondition.Altitude);
+                    nextionComms.sendFloatToNextion("te.txt", weatherCondition.Temperature);
+                    nextionComms.sendFloatToNextion("rh.txt", weatherCondition.RelativeHumidity * 100);
+                    nextionComms.sendFloatToNextion("ap.txt", weatherCondition.Barometer);
+                    environmentFirstRun = false;
+                    debugln(shotLocationInfo.Latitude);
+                }
+            }
+
+            if (nextionComms.isMessageInBuffer())
+            {
+                nextionComms.getData(&uiData);
+                debug("Value: ");
+                debugln(uiData.value);
+                if (uiData.page == 5)
+                {
+                    switch (uiData.value)
+                    {
+                        case 1:
+                            computerState = RANGE;
+                            environmentFirstRun = true;
+                            break;
+                        case 2:
+                            computerState = WINDAGE;
+                            environmentFirstRun = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            break;
+        case WINDAGE:
+            // In here we prompt the shooter to point the device directly into wind and press the button when done.
+            // The user is prompted to enter the wind speed on the same screen
+            if (windageFirstRun) 
+            {
+                debugln("Windage");
+                nextionComms.sendIntToNextion("globals.speed.val", (int)shotLocationInfo.WindSpeed);
+                nextionComms.sendIntToNextion("globals.direction.val", (int)shotLocationInfo.WindAngle);
+                nextionComms.sendPageToNextion(6);
+                rangeFirstRun = false;
+            }
+
+            if (digitalRead(BUTTON_PIN) == 1)
+            {
+                int dir = (int)compass.getAzimuth();
+                nextionComms.sendIntToNextion("direction.val", dir);
+                shotLocationInfo.WindAngle = dir;
+            }
+
+            if (nextionComms.isMessageInBuffer())
+            {
+                nextionComms.getData(&uiData);
+                debug("Value: ");
+                debugln(uiData.value);
+                if (uiData.page == 6)
+                {
+                    switch (uiData.value)
+                    {
+                        case 1:
+                            computerState = ENVIRONMENT;
+                            rangeFirstRun = true;
+                            break;
+                        case 2:
+                            shotLocationInfo.WindSpeed = uiData.speed;
+                            computerState = ANGLES;
+                            rangeFirstRun = true;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            break;
+        case ANGLES:
+            // In here the user is prompted to pont the device directly at the target and press the button when done
+            // the imu will register the inclination and azimuth of the target
+            if (anglesFirstRun)
+            {
+                debugln("Angles");
+                nextionComms.sendIntToNextion("globals.azimuth.val", (int)shotLocationInfo.ShotAzimuth);
+                nextionComms.sendIntToNextion("globals.direction.val", (int)shotLocationInfo.ShootingAngle);
+                nextionComms.sendPageToNextion(7);
+                rangeFirstRun = false;
+            }
+
+
+            if (digitalRead(BUTTON_PIN) == 1)
+            {
+                int inc = (int)compass.getPitch();
+                int az = (int)compass.getAzimuth();
+                nextionComms.sendIntToNextion("inclination.val", inc);
+                nextionComms.sendIntToNextion("azimuth.val", az);
+                shotLocationInfo.ShootingAngle = inc;
+                shotLocationInfo.ShotAzimuth = az;
+            }
+
+            if (nextionComms.isMessageInBuffer())
+            {
+                nextionComms.getData(&uiData);
+                debug("Value: ");
+                debugln(uiData.value);
+                if (uiData.page == 7)
+                {
+                    switch (uiData.value)
+                    {
+                    case 1:
+                        computerState = WINDAGE;
+                        rangeFirstRun = true;
+                        break;
+                    case 2:
+                        computerState = SOLUTION;
+                        rangeFirstRun = true;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+
+            break;
+        case SOLUTION:
+            // Here the firing solution is displayed in terms of windage and elevation corrections.
+            if (anglesFirstRun)
+            {
+                debugln("Solution");
+                rifle.Initialize(&rifleInfo, &cartridgeInfo, &shotSolution);
+                rifle.Solve(&weatherCondition, &shotLocationInfo);
+                nextionComms.sendIntToNextion("globals.vertClicks.val", (int)shotSolution.VerticalClicks);
+                nextionComms.sendIntToNextion("globals.horizClicks.val", (int)shotSolution.HorizontalClicks);
+                nextionComms.sendPageToNextion(8);
+                rangeFirstRun = false;
+            }
+
+            if (nextionComms.isMessageInBuffer())
+            {
+                nextionComms.getData(&uiData);
+                debug("Value: ");
+                debugln(uiData.value);
+                if (uiData.page == 8)
+                {
+                    switch (uiData.value)
+                    {
+                    case 1:
+                        computerState = ANGLES;
+                        rangeFirstRun = true;
+                        break;
+                    case 2:
+                        computerState = CARTRIDGE;
+                        shotLocationInfo.Latitude = 0.0;
+                        shotLocationInfo.Range = 0.0;
+                        shotLocationInfo.ShootingAngle = 0.0;
+                        shotLocationInfo.ShotAzimuth = 0.0;
+                        shotLocationInfo.WindAngle = 0.0;
+                        shotLocationInfo.WindSpeed = 0.0;
+                        rangeFirstRun = true;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+            }
+
+            break;
+        default:
+            break;
     }
 }

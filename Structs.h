@@ -130,7 +130,7 @@ typedef struct
 	double ShotAzimuth;
 	double WindAngle;
 	double WindSpeed;
-	double shootingAngle;
+	double ShootingAngle;
 	double Range;
 } ShotLocationInfo;
 
@@ -139,5 +139,7 @@ typedef struct UIData
 	int page = 0;
 	int value = 0;
 	int range = 0;
+	int speed = 0;
+	int direction = 0;
 };
 #endif

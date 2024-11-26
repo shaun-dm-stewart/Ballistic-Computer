@@ -21,7 +21,8 @@ public:
 	Rifle(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln);
 	Rifle();
 	void Initialize(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSolution* sln);
-	int Solve(double shootingAngle, double windSpeed, double windAngle, double range, WeatherCondition* atmInfo, ShotLocationInfo* shotLocationInfo);
+	int Solve(double ShootingAngle, double windSpeed, double windAngle, double range, WeatherCondition* atmInfo, ShotLocationInfo* shotLocationInfo);
+	int Solve(WeatherCondition* atmInfo, ShotLocationInfo* shotLocationInfo);
 private:
 	Ballistics _ballistics;
 	ShotSolution* _shotSln;

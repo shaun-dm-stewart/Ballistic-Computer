@@ -28,8 +28,20 @@ void Rifle::Initialize(RifleInfo* rifleInfo, CartridgeInfo* ammoInfo, ShotSoluti
 		barometer, temperature, _rifleInfo->ZeroingConditions.RelativeHumidity), muzzleVelocity, height, zeroDistance, 0.0);
 }
 
+int Rifle::Solve(WeatherCondition* atmInfo, ShotLocationInfo* shotLocationInfo) 
+{
+	return Solve(
+		shotLocationInfo->ShootingAngle,
+		shotLocationInfo->WindSpeed,
+		shotLocationInfo->WindAngle,
+		shotLocationInfo->Range,
+		atmInfo,
+		shotLocationInfo
+	);
+}
+
 int Rifle::Solve(
-	double shootingAngle,
+	double ShootingAngle,
 	double windSpeed,
 	double windAngle,
 	double range,
@@ -50,7 +62,7 @@ int Rifle::Solve(
 		bc,
 		_ammoInfo->MuzzleVelocity,
 		_rifleInfo->ScopeHeight,
-		shootingAngle,
+		ShootingAngle,
 		_zeroAngle,
 		windSpeed,
 		windAngle,

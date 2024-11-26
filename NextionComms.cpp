@@ -105,10 +105,17 @@ bool NextionComms::getData(UIData* data)
     case 1:
     case 2:
     case 3:
-        break;
     case 4:
         data->range = _doc["range"];
         break;
+    case 5:
+        break;
+    case 6:
+        data->speed = _doc["speed"];
+        data->direction = _doc["direction"];
+        break;
+    case 7:
+    case 8:
     default:
         break;
     }
